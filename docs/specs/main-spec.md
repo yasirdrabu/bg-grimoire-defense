@@ -253,7 +253,7 @@ type EntityId = number;
 // Components are plain data objects — no methods, no Phaser dependencies
 interface Position { gridX: number; gridY: number; }
 interface Health { current: number; max: number; }
-interface Movement { speed: number; path: [number, number][]; pathIndex: number; slowMultiplier: number; }
+interface Movement { speed: number; path: [number, number][]; pathIndex: number; slowMultiplier: number; gridVersion: number; }
 // ... etc
 
 // World owns component stores and provides queries
@@ -312,7 +312,6 @@ interface GameStore {
   comboMultiplier: number;
   gameSpeed: 1 | 2 | 3;
   isPaused: boolean;
-  selectedTowerId: string | null;
 
   // Action queue (written by Preact, drained by InputSystem)
   pendingActions: GameAction[];
@@ -320,6 +319,18 @@ interface GameStore {
 
   // Lifecycle
   resetGameState: () => void;  // called on GameScene.shutdown()
+}
+```
+
+```typescript
+// useUIStore — ephemeral UI state (see gameplay-rendering spec §3 for input states)
+interface UIStore {
+  inputMode: 'idle' | 'build' | 'selected';
+  selectedTowerId: string | null;
+  buildTowerType: string | null;
+  hoveredEntityId: string | null;
+  activeTab: 'none' | 'profile' | 'grimoire' | 'store' | 'leaderboard';
+  showPathOverlay: boolean;
 }
 ```
 
@@ -588,7 +599,7 @@ combo < 5   → 1x
 | Clean Wave | 100 | No enemies reach nexus during this wave |
 | Maze Master | 200/wave | Enemy path length > 200% of minimum possible path |
 
-**Nexus Health Bonus**: `nexusHP_remaining / maxNexusHP * 500` — up to 500 points for a perfect nexus.
+**Nexus Health Bonus**: `nexusHP_remaining / maxNexusHP * 500` — up to 500 points for a perfect nexus. `maxNexusHP` is difficulty-dependent (Story: 8, Normal: 5, Heroic: 3 — see "Difficulty Modes"). The ratio normalizes across difficulties, so Heroic players are not penalized for having fewer HP.
 
 **Perfect Wave Bonus**: 50 points per wave where nexus takes zero damage (stacks with Clean Wave).
 
@@ -724,11 +735,13 @@ Typed message protocol between main thread and worker:
 
 type WorkerRequest =
   | { id: number; type: 'FIND_PATH'; gridData: number[][]; startX: number; startY: number; endX: number; endY: number }
-  | { id: number; type: 'VALIDATE_PLACEMENT'; gridData: number[][]; spawns: [number, number][]; nexus: [number, number] };
+  | { id: number; type: 'VALIDATE_PLACEMENT'; gridData: number[][]; spawns: [number, number][]; nexus: [number, number] }
+  | { id: number; type: 'BATCH_VALIDATE'; gridData: number[][]; cells: [number, number][]; spawns: [number, number][]; nexus: [number, number] };
 
 type WorkerResponse =
   | { id: number; type: 'PATH_RESULT'; path: [number, number][] }
-  | { id: number; type: 'VALIDATION_RESULT'; valid: boolean; paths: Map<string, [number, number][]> }
+  | { id: number; type: 'VALIDATION_RESULT'; valid: boolean; paths: Record<string, [number, number][]> }
+  | { id: number; type: 'BATCH_RESULT'; results: Record<string, boolean> }
   | { id: number; type: 'ERROR'; message: string };
 ```
 
@@ -737,7 +750,8 @@ type WorkerResponse =
 - Timeout: 500ms. Stale requests are rejected, logged as warnings.
 - `onerror` handler on Worker instance. If worker crashes: terminate, spawn a new Worker, re-issue pending requests.
 - `VALIDATE_PLACEMENT` batches all spawn-to-nexus checks in a single message so the worker reuses the grid instance.
-- **Build-mode hover debounce**: validation requests are debounced to 100ms. When entering build mode, pre-compute a buildability map for all empty cells (background batch), then hover lookups are O(1) from the cache.
+- `BATCH_VALIDATE` pre-computes buildability for all candidate cells in one message. Used on build-mode enter (see gameplay-rendering spec §3 "Build-Mode Hover Optimization"). Returns `Record<string, boolean>` keyed by `"gridX,gridY"`.
+- **Build-mode hover debounce**: mouse-to-grid conversion is debounced to 100ms. Hover lookups are O(1) from the `BATCH_VALIDATE` cache.
 
 ---
 
@@ -986,7 +1000,7 @@ Designed in from the start, not deferred to polish phase:
 
 1. Monorepo setup: pnpm workspaces, Turborepo, shared tsconfig
 2. `packages/shared`: ECS type interfaces, Tower/Enemy/Level/Score types, data for Elven Archer Spire + Orc Grunt, constants (tile dimensions, economy)
-3. `packages/client`: Phaser boilerplate — BootScene, GameScene with 20x15 isometric grid (128×64 tiles)
+3. `packages/client`: Phaser boilerplate — BootScene, GameScene with 20×15 isometric grid (128×64 tiles) — prototype size; final maps scale up to 30×20 (see gameplay-rendering spec §2 for FLYING_DEPTH_OFFSET sizing)
 4. ECS World + core components (Position, Health, Movement, Attack, TowerData, EnemyData, Renderable)
 5. Pathfinding Web Worker with typed protocol, PathManager with cache
 6. Tower placement with ghost preview + path validation

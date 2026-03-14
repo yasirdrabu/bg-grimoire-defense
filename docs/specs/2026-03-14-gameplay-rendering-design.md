@@ -50,7 +50,7 @@ Fade-to-black tween: 300ms fade out → load next scene → 300ms fade in. This 
 - **HubScene is the anchor** — a single hub with tab navigation keeps the player oriented. All non-gameplay UI (profile, grimoire, store, leaderboard) is accessible as Preact overlay tabs.
 - **HubScene is a hybrid renderer** — Phaser renders the campaign map (tilemap, level node sprites, scrolling). Preact renders tab panels, tooltips, and level detail modals. The map dims (alpha overlay) when a Preact tab is open.
 - **SettingsOverlay is a Preact modal**, not a Phaser scene — avoids unnecessary scene teardown/rebuild.
-- **BossIntroScene** only triggers for levels where the wave definition includes a boss flag. Short cinematic (3-5s), then transitions to GameScene with boss entity data pre-loaded.
+- **BossIntroScene** only triggers for levels with a boss encounter (Levels 5, 11, 12, 17, 18 — see main spec "Boss Encounters"). The level data includes a `boss` field; when present, HubScene transitions through BossIntroScene (3-5s cinematic) before GameScene. The boss spawns during the final wave of that level, not at level start.
 
 ---
 
@@ -169,8 +169,8 @@ Three input states, managed by `useUIStore.inputMode`:
 
 Path validation per hover cell is expensive (Web Worker round-trip). Optimization:
 
-1. On entering build mode, `PathManager.precomputeBuildability()` sends a `VALIDATE_PLACEMENT` batch to the worker for all empty, walkable cells.
-2. Results are cached in a `Map<string, boolean>` keyed by `"gridX,gridY"`.
+1. On entering build mode, `PathManager.precomputeBuildability()` sends a `BATCH_VALIDATE` request to the worker for all empty, walkable cells (see main spec "Pathfinding Web Worker Protocol").
+2. Results are cached in a `Record<string, boolean>` keyed by `"gridX,gridY"`.
 3. Hover lookups are O(1) from cache — no per-hover worker calls.
 4. Cache is invalidated whenever the grid version changes (tower placed/sold during build mode).
 5. Mouse position → grid cell conversion is debounced to 100ms to avoid redundant ghost sprite updates during fast mouse movement.
@@ -190,6 +190,7 @@ See main spec "Accessibility" for the full list. Key bindings relevant to gamepl
 | Tab | Cycle through placed towers |
 | Space | Send wave early |
 | Escape | Cancel build mode / deselect tower |
+| V | Toggle path visualization overlay |
 | P | Toggle pause |
 | +/- | Cycle game speed (1×/2×/3×) |
 
