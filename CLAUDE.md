@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Grimoire Defense** is a browser-based tower defense game where players defend a Nexus against cross-universe enemies (Tolkien, Wizarding World, Westeros). Towers shape enemy pathing (hybrid maze-builder). Features dual currency (Gold + Essence), branching upgrades with cross-universe fusion, and competitive scoring.
 
 Two spec documents drive development:
-- `docs/main-spec.md` — architecture, tech stack, monorepo structure, database schema, API routes, anti-cheat, build phases
+- `docs/specs/main-spec.md` — architecture, tech stack, monorepo structure, database schema, API routes, anti-cheat, build phases
 - `docs/specs/2026-03-14-gameplay-rendering-design.md` — isometric rendering pipeline, scene flow, camera/input, game loop, enemy movement, visual feedback
 
 ## Commands
