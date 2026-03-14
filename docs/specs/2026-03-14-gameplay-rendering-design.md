@@ -6,8 +6,6 @@ Companion to `docs/main-spec.md`. This document covers scene management, isometr
 
 ## 1. Scene Graph & Flow
 
-> **Note:** This spec supersedes the scene file list in `main-spec.md`. The main spec's `MainMenuScene.ts`, `LevelSelectScene.ts`, and `GrimoireScene.ts` are consolidated into a single **HubScene** with tab-based navigation. The main spec's file tree should be updated to reflect this.
-
 ```
 BootScene (preload shared assets, splash)
     │
@@ -42,7 +40,7 @@ Fade-to-black tween: 300ms fade out → load next scene → 300ms fade in. This 
 
 ### Key Design Decisions
 
-- **HubScene replaces MainMenuScene + LevelSelectScene + GrimoireScene** from the main spec. A single hub with tab navigation is simpler to manage and keeps the player oriented.
+- **HubScene is the anchor** — a single hub with tab navigation keeps the player oriented. All non-gameplay UI (profile, grimoire, store, leaderboard) is accessible as Preact overlay tabs.
 - **SettingsOverlay is a Preact modal**, not a Phaser scene — avoids unnecessary scene teardown/rebuild.
 - **BossIntroScene** only triggers for levels with a boss flag. Short cinematic, then transitions to GameScene with boss data loaded.
 
@@ -166,7 +164,7 @@ Every frame (16.6ms target at 60 FPS), systems execute in this order:
 | 6 | PROJECTILE | Move projectiles, check hit (distance to target < threshold), apply damage + effects |
 | 7 | STATUS | Tick effect durations, apply DoT damage, apply slow multipliers, expire finished effects |
 | 8 | DEATH | Remove dead enemies, award gold/essence, feed kills to ComboTracker + ScoreSystem |
-| 9 | NEXUS | Check enemies reaching nexus: deduct HP, destroy enemy, check game-over condition. Logic lives in `NexusSystem.ts` (adds to `ecs/systems/` in the main spec's file tree) |
+| 9 | NEXUS | Check enemies reaching nexus: deduct HP, destroy enemy, check game-over condition (`NexusSystem.ts`) |
 | 10 | SCORE | Update combo timer, speed bonus tracker, style points, push totals to Zustand store |
 | 11 | RENDER | Y-sort entity layer, update sprite positions/animations, sync particle emitters, update health bars |
 | — | PREACT | Reacts to Zustand store changes → re-renders HUD (gold, wave, score, combo display) |
