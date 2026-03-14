@@ -751,7 +751,7 @@ type WorkerResponse =
 
 **PathManager responsibilities**:
 - Promise-based request map: `Map<number, { resolve, reject, timestamp }>`.
-- Timeout: 500ms. Stale requests are rejected, logged as warnings.
+- Per-request timeout: 500ms. If a single request takes longer, its promise is rejected and logged as a warning. Enemies continue on their last known path.
 - `onerror` handler on Worker instance. If worker crashes: terminate, spawn a new Worker, re-issue pending requests.
 - `VALIDATE_PLACEMENT` batches all spawn-to-nexus checks in a single message so the worker reuses the grid instance.
 - `BATCH_VALIDATE` pre-computes buildability for all candidate cells in one message. Used on build-mode enter (see gameplay-rendering spec §3 "Build-Mode Hover Optimization"). Returns `Record<string, boolean>` keyed by `"gridX,gridY"`.
@@ -785,7 +785,7 @@ Three loading tiers:
 ### Web Worker Crash
 
 - PathManager's `onerror` handler terminates the crashed worker, spawns a new one, re-issues pending requests.
-- Watchdog timeout (2s): if a request hangs, reject it, log a warning, and let enemies continue on their last known path.
+- Watchdog timeout (2s): separate from the per-request 500ms timeout — fires if the worker has not responded to *any* message for 2 seconds, indicating a crash or hang. Terminate worker, spawn a new one, re-issue all pending requests.
 
 ### Asset Load Failure
 
