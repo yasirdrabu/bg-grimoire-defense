@@ -224,7 +224,14 @@ Every frame (16.6ms target at 60 FPS), systems execute in this order. All system
 ```typescript
 update(time: number, delta: number) {
   const dt = delta * this.time.timeScale;
-  if (dt === 0 && !this.hasPendingPauseActions()) return; // paused, skip unless pause-safe actions queued
+
+  // When paused (dt === 0): only run InputSystem if pause-safe actions are queued.
+  // Pause-safe actions: BUILD_TOWER, UPGRADE_TOWER, SELL_TOWER, FUSE_TOWERS, TOGGLE_PAUSE.
+  // hasPendingPauseActions() checks useGameStore.pendingActions for any of those types.
+  if (dt === 0) {
+    if (this.hasPendingPauseActions()) inputSystem(this.world, 0);
+    return;
+  }
 
   inputSystem(this.world, dt);
   waveSystem(this.world, dt);
@@ -350,8 +357,9 @@ During build mode, the ghost preview provides immediate visual feedback:
 All towers use visible projectiles (no instant-hit). Projectile entities have:
 
 - A `Renderable` component with a sprite (arrow, fireball, spell bolt — defined per tower in `packages/shared/src/data/towers.ts` as `projectileType`)
-- `Movement` component: speed and homing behavior (tracks target position each frame)
-- On hit: projectile entity destroyed, damage applied via `Health` component, status effects applied via `StatusEffects` component, impact VFX plays (particle burst at hit location from `ParticlePresets.ts`)
+- A `Projectile` component (see main spec "ECS Contract"): `targetId` (homing — tracks target entity each frame), `speed`, `damage`, `damageType`, optional `statusEffect`
+- A `Position` component updated each frame by `ProjectileSystem` (moves toward target's `Position`)
+- On hit (distance to target < threshold): projectile entity destroyed, damage applied to target's `Health`, status effects applied to target's `StatusEffects`, impact VFX plays (particle burst at hit location from `ParticlePresets.ts`)
 - Tower fire feedback: recoil animation + muzzle particle + fire SFX (see main spec "Game Feel & Juice")
 
 ### Health Bars

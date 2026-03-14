@@ -88,6 +88,7 @@ grimoire-defense/
 │   │   │   │   │   │   ├── TowerData.ts
 │   │   │   │   │   │   ├── EnemyData.ts
 │   │   │   │   │   │   ├── Renderable.ts    # Holds Phaser Sprite reference
+│   │   │   │   │   │   ├── Projectile.ts     # Target ID, speed, damage, effect
 │   │   │   │   │   │   ├── StatusEffects.ts
 │   │   │   │   │   │   └── BossPhase.ts     # FSM state for boss entities
 │   │   │   │   │   └── systems/             # ECS systems (see gameplay-rendering-spec for execution order)
@@ -254,6 +255,7 @@ type EntityId = number;
 interface Position { gridX: number; gridY: number; }
 interface Health { current: number; max: number; }
 interface Movement { speed: number; path: [number, number][]; pathIndex: number; slowMultiplier: number; gridVersion: number; }
+interface Projectile { targetId: EntityId; speed: number; damage: number; damageType: string; statusEffect?: { type: string; duration: number; magnitude: number }; }
 // ... etc
 
 // World owns component stores and provides queries
@@ -396,11 +398,13 @@ Each universe has 5 towers following a cost/role archetype:
 
 | Tower | Role | Cost | Range | Attack Speed | Damage | Special |
 |-------|------|------|-------|-------------|--------|---------|
-| Elven Archer Spire | Cheap DPS | 100g | 4 tiles | 0.8s | 15 | Long range, fast shots |
-| Gondorian Ballista | Expensive DPS | 300g | 3.5 tiles | 2.5s | 80 | Piercing (hits 2 enemies in line) |
-| Dwarven Cannon | Specialist | 250g | 3 tiles | 2.0s | 40 (splash) | 1.5-tile splash radius |
-| Istari Crystal | Utility | 150g | 3 tiles | 1.5s | 10 | 30% slow for 2s |
-| Ent Watchtower | Medium DPS | 200g | 2.5 tiles | 1.2s | 30 | Roots (brief stun) at Tier 2+ |
+| Elven Archer Spire | Cheap DPS | 100g | 4 tiles | 0.8s | 15 | Long range, fast shots. **Can target air.** |
+| Gondorian Ballista | Expensive DPS | 300g | 3.5 tiles | 2.5s | 80 | Piercing (hits 2 enemies in line). Ground only. |
+| Dwarven Cannon | Specialist | 250g | 3 tiles | 2.0s | 40 (splash) | 1.5-tile splash radius. Ground only. |
+| Istari Crystal | Utility | 150g | 3 tiles | 1.5s | 10 | 30% slow for 2s. **Can target air.** |
+| Ent Watchtower | Medium DPS | 200g | 2.5 tiles | 1.2s | 30 | Roots (brief stun) at Tier 2+. Ground only. |
+
+`canTargetAir` defaults to `false`. Each universe should have at least 2 air-capable towers to ensure boss flight phases are winnable.
 
 *(Wizarding World and Westeros towers follow the same archetype pattern — defined during Act 2/3 implementation.)*
 
@@ -711,7 +715,7 @@ Every tower has:
 
 Since the game runs client-side, we cannot prevent cheating entirely. The strategy is **deterrence + detection**:
 
-1. **Score Validation (Server-Side)**: The client submits raw score components. The server recomputes the total using `shared/logic/ScoreAggregator` and compares. The client does NOT need an HMAC secret — the server computes the hash independently using the session ID as salt. Mismatches flag the score for review.
+1. **Score Validation (Server-Side)**: The client submits raw score components (base, combo, speed, style, etc.). The server recomputes the total using `shared/logic/ScoreAggregator` and compares. Additionally, the server computes `score_hash = HMAC-SHA256(SCORE_HMAC_SECRET, sessionId + "|" + totalScore)` and stores it in the `game_sessions` table — this is a server-side integrity seal, not a client-provided value. The client does NOT know `SCORE_HMAC_SECRET`. Mismatches between client-submitted total and server-computed total flag the score for review.
 
 2. **Plausibility Checks**: The server validates that:
    - `duration_ms` >= minimum possible clear time for the level
