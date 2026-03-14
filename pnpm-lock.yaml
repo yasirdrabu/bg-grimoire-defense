@@ -20,6 +20,9 @@ importers:
       '@grimoire/shared':
         specifier: workspace:*
         version: link:../shared
+      pathfinding:
+        specifier: ^0.4.18
+        version: 0.4.18
       phaser:
         specifier: ^3.80.0
         version: 3.90.0
@@ -935,6 +938,9 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
+  heap@0.2.5:
+    resolution: {integrity: sha512-G7HLD+WKcrOyJP5VQwYZNC3Z6FcQ7YYjEFiFoIj8PfEr73mu421o8B1N5DKUcc8K37EsJ2XXWA8DtrDz/2dReg==}
+
   hono@4.12.8:
     resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
     engines: {node: '>=16.9.0'}
@@ -1060,6 +1066,9 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  pathfinding@0.4.18:
+    resolution: {integrity: sha512-R0TGEQ9GRcFCDvAWlJAWC+KGJ9SLbW4c0nuZRcioVlXVTlw+F5RvXQ8SQgSqI9KXWC1ew95vgmIiyaWTlCe9Ag==}
 
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
@@ -2026,6 +2035,8 @@ snapshots:
 
   he@1.2.0: {}
 
+  heap@0.2.5: {}
+
   hono@4.12.8: {}
 
   jiti@2.6.1: {}
@@ -2115,6 +2126,10 @@ snapshots:
       boolbase: 1.0.0
 
   pathe@2.0.3: {}
+
+  pathfinding@0.4.18:
+    dependencies:
+      heap: 0.2.5
 
   pathval@2.0.1: {}
 
