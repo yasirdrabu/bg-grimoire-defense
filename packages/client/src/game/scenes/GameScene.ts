@@ -150,12 +150,6 @@ export class GameScene extends Phaser.Scene {
       this.clearGhost();
     });
     this.input.keyboard?.on('keydown-SPACE', () => this.startWave());
-
-    // Start first wave prompt
-    this.add.text(this.scale.width / 2, 20, 'Press SPACE to send wave | Keys 1-5 to build towers | Click to place', {
-      fontSize: '14px',
-      color: '#cccccc',
-    }).setOrigin(0.5, 0).setDepth(1000);
   }
 
   private drawGrid(): void {
