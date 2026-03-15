@@ -1,4 +1,4 @@
-import type { TowerDefinition } from '../types/tower';
+import type { TowerDefinition, TowerUpgradeData } from '../types/tower';
 
 export const TOWERS: Record<string, TowerDefinition> = {
   elven_archer_spire: {
@@ -88,5 +88,123 @@ export const TOWERS: Record<string, TowerDefinition> = {
     essenceCostTier3: 75,
     splashRadius: 1.5,
     special: '1.5-tile splash radius',
+  },
+};
+
+export const TOWER_UPGRADES: Record<string, TowerUpgradeData> = {
+  elven_archer_spire: {
+    tier2: {
+      damageBonus: 0.3,
+      rangeBonus: 0.5,
+      attackSpeedBonus: -0.1,
+    },
+    tier3A: {
+      name: 'Eagle Eye',
+      description: 'Precision shots with critical hit chance.',
+      damageBonus: 0.5,
+      rangeBonus: 1,
+      attackSpeedBonus: 0,
+      specialAbility: 'Critical hit 15%',
+    },
+    tier3B: {
+      name: 'Storm of Arrows',
+      description: 'Rapid volleys targeting multiple enemies.',
+      damageBonus: 0.2,
+      rangeBonus: 0,
+      attackSpeedBonus: -0.3,
+      specialAbility: 'Multishot (2 targets)',
+    },
+  },
+  ent_watchtower: {
+    tier2: {
+      damageBonus: 0.4,
+      rangeBonus: 0,
+      attackSpeedBonus: -0.15,
+    },
+    tier3A: {
+      name: 'Ancient Treant',
+      description: 'Ancient power doubles the root duration.',
+      damageBonus: 0.6,
+      rangeBonus: 0.5,
+      attackSpeedBonus: 0,
+      specialAbility: 'Root duration +100%',
+    },
+    tier3B: {
+      name: 'Forest Warden',
+      description: 'Oversees the forest, healing nearby towers.',
+      damageBonus: 0.3,
+      rangeBonus: 1,
+      attackSpeedBonus: -0.1,
+      specialAbility: 'Heal nearby towers',
+    },
+  },
+  gondorian_ballista: {
+    tier2: {
+      damageBonus: 0.25,
+      rangeBonus: 0.5,
+      attackSpeedBonus: -0.1,
+    },
+    tier3A: {
+      name: 'Siege Engine',
+      description: 'Massive bolts that shatter enemy armor.',
+      damageBonus: 0.8,
+      rangeBonus: 0,
+      attackSpeedBonus: 0.2,
+      specialAbility: 'Armor break',
+    },
+    tier3B: {
+      name: 'Repeating Ballista',
+      description: 'Rapid-fire mechanism pierces multiple targets.',
+      damageBonus: 0.3,
+      rangeBonus: 0,
+      attackSpeedBonus: -0.4,
+      specialAbility: 'Pierce +2',
+    },
+  },
+  istari_crystal: {
+    tier2: {
+      damageBonus: 0.2,
+      rangeBonus: 0.5,
+      attackSpeedBonus: 0,
+    },
+    tier3A: {
+      name: 'Arcane Focus',
+      description: 'Concentrated arcane energy enhances slow potency.',
+      damageBonus: 0.5,
+      rangeBonus: 1,
+      attackSpeedBonus: 0,
+      specialAbility: 'Slow magnitude +20%',
+    },
+    tier3B: {
+      name: 'Chain Lightning',
+      description: 'Magical discharge arcs between enemies.',
+      damageBonus: 0.3,
+      rangeBonus: 0,
+      attackSpeedBonus: -0.2,
+      specialAbility: 'Chain to 3 targets',
+    },
+  },
+  dwarven_cannon: {
+    tier2: {
+      damageBonus: 0.35,
+      rangeBonus: 0,
+      attackSpeedBonus: 0,
+    },
+    tier3A: {
+      name: 'Dragon Fire',
+      description: 'Dwarven fire-oil coats enemies in burning flames.',
+      damageBonus: 0.6,
+      rangeBonus: 0.5,
+      attackSpeedBonus: 0,
+      specialAbility: 'Burn DoT',
+    },
+    tier3B: {
+      name: 'Cluster Bomb',
+      description: 'Fragmentation shells devastate clustered groups.',
+      damageBonus: 0.2,
+      rangeBonus: 0,
+      attackSpeedBonus: -0.25,
+      specialAbility: 'Splash radius +1',
+    },
   },
 };
