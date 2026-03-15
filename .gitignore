@@ -6,4 +6,5 @@ dist/
 .superpowers/
 .turbo/
 .playwright-mcp/
+.worktrees/
 *.tsbuildinfo
