@@ -105,6 +105,8 @@ export class GameScene extends Phaser.Scene {
       maxNexusHP: 5,
       wave: 0,
       totalWaves: 5,
+      waveState: 'pre',
+      nextWaveEnemies: [{ enemyType: 'orc_grunt', count: 10 }],
     });
 
     // Input: click to place towers
@@ -308,12 +310,18 @@ export class GameScene extends Phaser.Scene {
     this.waveActive = true;
     this.enemiesToSpawn = 10 + state.wave * 2; // escalating count
     this.spawnTimer = 0;
-    useGameStore.setState({ wave: state.wave + 1 });
+    useGameStore.setState({ wave: state.wave + 1, waveState: 'spawning' });
   }
 
   update(_time: number, delta: number): void {
     const state = useGameStore.getState();
     if (state.isGameOver || state.isPaused) return;
+
+    // Handle send wave early flag
+    if (state.sendWaveEarlyFlag) {
+      useGameStore.setState({ sendWaveEarlyFlag: false });
+      this.startWave();
+    }
 
     const dt = delta * state.gameSpeed;
 
@@ -341,6 +349,34 @@ export class GameScene extends Phaser.Scene {
     deathSystem(this.world, dt);
     nexusSystem(this.world, dt, this.nexusPos[0], this.nexusPos[1]);
     // scoreSystem — Phase 2
+
+    // Check wave state transitions
+    const currentWaveState = useGameStore.getState().waveState;
+    if (currentWaveState === 'spawning' || currentWaveState === 'active') {
+      const livingEnemies = this.world.query(EnemyDataComponent, HealthComponent);
+      const anyAlive = livingEnemies.some((id) => {
+        const health = this.world.getComponent(id, HealthComponent)!;
+        return health.current > 0;
+      });
+
+      if (!anyAlive && !this.waveActive) {
+        // All enemies dead and spawning complete
+        useGameStore.setState({ waveState: 'clear' });
+        // Project next wave enemies
+        if (state.wave < state.totalWaves) {
+          const count = 10 + state.wave * 2;
+          useGameStore.setState({
+            nextWaveEnemies: [{ enemyType: 'orc_grunt', count }],
+          });
+        } else {
+          useGameStore.setState({ nextWaveEnemies: [] });
+        }
+      } else if (!this.waveActive && currentWaveState === 'spawning') {
+        // Spawning finished but enemies still alive
+        useGameStore.setState({ waveState: 'active' });
+      }
+    }
+
     this.renderEntities();
   }
 

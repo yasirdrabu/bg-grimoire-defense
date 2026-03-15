@@ -18,10 +18,13 @@ export function inputSystem(world: World, _dt: number): void {
         // Handled by GameScene directly (needs PathManager + grid access)
         break;
 
+      case 'SEND_WAVE_EARLY':
+        useGameStore.setState({ sendWaveEarlyFlag: true });
+        break;
+
       case 'UPGRADE_TOWER':
       case 'SELL_TOWER':
       case 'FUSE_TOWERS':
-      case 'SEND_WAVE_EARLY':
         // Will be handled in Phase 2
         break;
     }
