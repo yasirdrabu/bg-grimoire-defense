@@ -105,7 +105,7 @@ export class GameScene extends Phaser.Scene {
       maxNexusHP: 5,
       wave: 0,
       totalWaves: 5,
-      waveState: 'pre',
+      waveState: 'pre_wave',
       nextWaveEnemies: [{ enemyType: 'orc_grunt', count: 10 }],
     });
 
@@ -387,7 +387,7 @@ export class GameScene extends Phaser.Scene {
 
       if (!anyAlive && !this.waveActive) {
         // All enemies dead and spawning complete
-        useGameStore.setState({ waveState: 'clear' });
+        useGameStore.setState({ waveState: 'wave_clear' });
         // Project next wave enemies
         if (state.wave < state.totalWaves) {
           const count = 10 + state.wave * 2;

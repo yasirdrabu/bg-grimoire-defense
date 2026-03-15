@@ -87,16 +87,24 @@ describe('WaveSystem — PRE_WAVE countdown', () => {
     expect(ws.getState()).toBe('spawning');
   });
 
-  it('emits APPLY_INTEREST event when PRE_WAVE begins', () => {
+  it('does NOT emit APPLY_INTEREST on wave 0 (pre-wave-1 guard)', () => {
     const ws = new WaveSystem(level1);
     const events = ws.tick(1, 0);
     const interestEvent = events.find((e) => e.type === 'APPLY_INTEREST');
-    expect(interestEvent).toBeDefined();
+    expect(interestEvent).toBeUndefined();
   });
 
-  it('emits APPLY_INTEREST only once per PRE_WAVE phase', () => {
+  it('emits APPLY_INTEREST on wave 1+ PRE_WAVE phase, only once', () => {
+    // Advance to wave 1 (index 1): complete wave 0 first
     const ws = new WaveSystem(level1);
-    // First tick should emit it
+    ws.sendWaveEarly();
+    ws.tick(1, 0);
+    drainAllSpawnEvents(ws); // finish spawning wave 0
+    ws.tick(WAVE_CLEAR_PAUSE_MS + 100, 0); // wave_clear → pre_wave for wave 1
+    expect(ws.getCurrentWaveIndex()).toBe(1);
+    expect(ws.getState()).toBe('pre_wave');
+
+    // First tick in wave 1 PRE_WAVE should emit APPLY_INTEREST
     const firstEvents = ws.tick(1, 0);
     const firstInterest = firstEvents.filter((e) => e.type === 'APPLY_INTEREST');
     expect(firstInterest).toHaveLength(1);
@@ -292,9 +300,10 @@ describe('WaveSystem — LEVEL_COMPLETE', () => {
       ws.tick(16, 0); // all dead → wave_clear / level_complete
     }
 
-    // After all waves, should be level_complete
-    ws.tick(WAVE_CLEAR_PAUSE_MS + 100, 0);
+    // After all waves, should be level_complete and emit LEVEL_COMPLETE event
+    const finalEvents = ws.tick(WAVE_CLEAR_PAUSE_MS + 100, 0);
     expect(ws.getState()).toBe('level_complete');
+    expect(finalEvents.find(e => e.type === 'LEVEL_COMPLETE')).toBeDefined();
   });
 });
 
@@ -310,13 +319,17 @@ describe('WaveSystem — reset', () => {
     expect(ws.getCurrentWaveIndex()).toBe(0);
   });
 
-  it('emits APPLY_INTEREST again on first tick after reset', () => {
+  it('does not emit APPLY_INTEREST on first tick after reset (wave index resets to 0)', () => {
     const ws = new WaveSystem(level1);
-    ws.tick(1, 0); // initial APPLY_INTEREST
+    ws.sendWaveEarly();
+    ws.tick(1, 0);
+    drainAllSpawnEvents(ws);
+    ws.tick(WAVE_CLEAR_PAUSE_MS + 100, 0); // advance to wave 1
 
     ws.reset();
+    expect(ws.getCurrentWaveIndex()).toBe(0);
     const events = ws.tick(1, 0);
     const interestEvent = events.find((e) => e.type === 'APPLY_INTEREST');
-    expect(interestEvent).toBeDefined();
+    expect(interestEvent).toBeUndefined();
   });
 });

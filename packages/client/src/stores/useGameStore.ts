@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { STARTING_GOLD } from '@grimoire/shared';
+import type { WaveState } from '../game/ecs/systems/WaveSystem';
 
 export type GameAction =
   | { type: 'BUILD_TOWER'; towerType: string; gridX: number; gridY: number }
@@ -26,7 +27,7 @@ export interface GameState {
   isGameOver: boolean;
 
   // Wave state for WavePreview
-  waveState: 'pre' | 'spawning' | 'active' | 'clear';
+  waveState: WaveState;
   nextWaveEnemies: Array<{ enemyType: string; count: number }>;
 
   // Selected tower projection for TowerInfo
@@ -72,7 +73,7 @@ const DEFAULT_STATE = {
   gameSpeed: 1 as const,
   isPaused: false,
   isGameOver: false,
-  waveState: 'pre' as const,
+  waveState: 'pre_wave' as WaveState,
   nextWaveEnemies: [] as Array<{ enemyType: string; count: number }>,
   selectedTowerData: null as GameState['selectedTowerData'],
   sendWaveEarlyFlag: false,

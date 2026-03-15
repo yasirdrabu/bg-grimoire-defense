@@ -115,10 +115,12 @@ export class WaveSystem {
   }
 
   private tickPreWave(deltaMs: number, events: WaveSystemEvent[]): void {
-    // Emit APPLY_INTEREST once at the start of each PRE_WAVE phase
+    // Emit APPLY_INTEREST once at the start of each PRE_WAVE phase, but skip wave 0
     if (!this.interestApplied) {
       this.interestApplied = true;
-      events.push({ type: 'APPLY_INTEREST' });
+      if (this.waveIndex > 0) {
+        events.push({ type: 'APPLY_INTEREST' });
+      }
     }
 
     this.countdownMs += deltaMs;

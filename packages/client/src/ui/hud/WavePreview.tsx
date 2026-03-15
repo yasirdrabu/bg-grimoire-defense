@@ -8,7 +8,7 @@ export function WavePreview() {
   const nextWaveEnemies = useStore(useGameStore, (s) => s.nextWaveEnemies);
   const isGameOver = useStore(useGameStore, (s) => s.isGameOver);
 
-  const canSend = (waveState === 'pre' || waveState === 'clear') && !isGameOver && wave < totalWaves;
+  const canSend = (waveState === 'pre_wave' || waveState === 'wave_clear') && !isGameOver && wave < totalWaves;
 
   return (
     <div class="hud-interactive fixed top-14 left-2 z-10">
