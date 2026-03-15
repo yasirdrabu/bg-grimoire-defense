@@ -25,10 +25,35 @@ export interface GameState {
   isPaused: boolean;
   isGameOver: boolean;
 
+  // Wave state for WavePreview
+  waveState: 'pre' | 'spawning' | 'active' | 'clear';
+  nextWaveEnemies: Array<{ enemyType: string; count: number }>;
+
+  // Selected tower projection for TowerInfo
+  selectedTowerData: {
+    id: string;
+    name: string;
+    tier: number;
+    damage: number;
+    attackSpeed: number;
+    range: number;
+    special: string | null;
+    upgradeCostA: number | null;
+    upgradeCostB: number | null;
+    sellRefund: number;
+  } | null;
+
+  // Send wave early flag (set by InputSystem, consumed by GameScene)
+  sendWaveEarlyFlag: boolean;
+
   // Action queue (written by Preact, drained by InputSystem)
   pendingActions: GameAction[];
   dispatch: (action: GameAction) => void;
   drainActions: () => GameAction[];
+
+  // Actions to project selected tower data from ECS
+  projectSelectedTower: (data: GameState['selectedTowerData']) => void;
+  clearSelectedTower: () => void;
 
   // Lifecycle
   resetGameState: () => void;
@@ -47,6 +72,10 @@ const DEFAULT_STATE = {
   gameSpeed: 1 as const,
   isPaused: false,
   isGameOver: false,
+  waveState: 'pre' as const,
+  nextWaveEnemies: [] as Array<{ enemyType: string; count: number }>,
+  selectedTowerData: null as GameState['selectedTowerData'],
+  sendWaveEarlyFlag: false,
   pendingActions: [] as GameAction[],
 };
 
@@ -67,5 +96,12 @@ export const useGameStore = createStore<GameState>((set, get) => ({
 
   resetGameState: () => {
     set({ ...DEFAULT_STATE, pendingActions: [] });
+  },
+
+  projectSelectedTower: (data) => {
+    set({ selectedTowerData: data });
+  },
+  clearSelectedTower: () => {
+    set({ selectedTowerData: null });
   },
 }));
