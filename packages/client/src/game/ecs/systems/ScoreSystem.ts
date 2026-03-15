@@ -19,17 +19,22 @@ export function resetScoreSystem(): void {
 
 /**
  * Returns the current ComboTracker instance (for external kill registration).
+ * Other systems call getComboTracker().registerKill(getElapsedMs())
  */
 export function getComboTracker(): ComboTracker {
   return comboTracker;
 }
 
 /**
+ * Returns the elapsed time in milliseconds since the game started.
+ */
+export function getElapsedMs(): number {
+  return elapsedMs;
+}
+
+/**
  * ECS system that updates the combo tracker and projects score/combo state
  * to the Zustand store each frame.
- *
- * Other systems (e.g. DeathSystem) should call `getComboTracker().registerKill(elapsedMs)`
- * when an enemy is killed to drive the combo.
  */
 export function scoreSystem(_world: World, deltaMs: number): void {
   elapsedMs += deltaMs;

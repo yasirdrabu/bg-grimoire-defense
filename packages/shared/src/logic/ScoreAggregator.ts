@@ -1,10 +1,10 @@
 import type { ScoreBreakdown } from '../types/score';
+import { MAX_POINTS_PER_WAVE } from '../constants';
 
 /**
  * Maximum plausible points per wave (used for anti-cheat sanity check).
  * Even with perfect play, a wave should not yield more than this amount.
  */
-const MAX_POINTS_PER_WAVE = 50000;
 
 /**
  * Aggregates all score components into a complete ScoreBreakdown with totalScore.

@@ -1,4 +1,4 @@
-const MAX_SPEED_BONUS = 500;
+import { MAX_SPEED_BONUS } from '@grimoire/shared';
 
 /**
  * Calculates a speed bonus for clearing a wave faster than par time.

@@ -31,6 +31,8 @@ export const FIRST_FUSION_ESSENCE = 25;
 // Scoring
 export const COMBO_WINDOW_MS = 2500;
 export const MAX_GAME_SPEED = 3;
+export const MAX_SPEED_BONUS = 500;
+export const MAX_POINTS_PER_WAVE = 50000;
 
 // Waves
 export const WAVE_CLEAR_PAUSE_MS = 2000;
