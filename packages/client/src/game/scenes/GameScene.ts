@@ -125,11 +125,26 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Keyboard shortcuts
-    this.input.keyboard?.on('keydown-ONE', () => useUIStore.getState().enterBuildMode('elven_archer_spire'));
-    this.input.keyboard?.on('keydown-TWO', () => useUIStore.getState().enterBuildMode('ent_watchtower'));
-    this.input.keyboard?.on('keydown-THREE', () => useUIStore.getState().enterBuildMode('gondorian_ballista'));
-    this.input.keyboard?.on('keydown-FOUR', () => useUIStore.getState().enterBuildMode('istari_crystal'));
-    this.input.keyboard?.on('keydown-FIVE', () => useUIStore.getState().enterBuildMode('dwarven_cannon'));
+    this.input.keyboard?.on('keydown-ONE', () => {
+      useUIStore.getState().enterBuildMode('elven_archer_spire');
+      useGameStore.getState().clearSelectedTower();
+    });
+    this.input.keyboard?.on('keydown-TWO', () => {
+      useUIStore.getState().enterBuildMode('ent_watchtower');
+      useGameStore.getState().clearSelectedTower();
+    });
+    this.input.keyboard?.on('keydown-THREE', () => {
+      useUIStore.getState().enterBuildMode('gondorian_ballista');
+      useGameStore.getState().clearSelectedTower();
+    });
+    this.input.keyboard?.on('keydown-FOUR', () => {
+      useUIStore.getState().enterBuildMode('istari_crystal');
+      useGameStore.getState().clearSelectedTower();
+    });
+    this.input.keyboard?.on('keydown-FIVE', () => {
+      useUIStore.getState().enterBuildMode('dwarven_cannon');
+      useGameStore.getState().clearSelectedTower();
+    });
     this.input.keyboard?.on('keydown-ESC', () => {
       useUIStore.getState().exitBuildMode();
       this.clearGhost();
@@ -191,57 +206,74 @@ export class GameScene extends Phaser.Scene {
   private handleClick(pointer: Phaser.Input.Pointer): void {
     const ui = useUIStore.getState();
     const game = useGameStore.getState();
-
-    if (ui.inputMode !== 'build' || !ui.buildTowerType) return;
-
     const { gridX, gridY } = screenToGrid(
       pointer.worldX, pointer.worldY,
       0, 0,
       this.mapOffsetX, this.mapOffsetY,
     );
 
-    // Validate placement
-    if (!canPlace(this.gridData, gridX, gridY)) return;
-    if (gridX === this.spawnPos[0] && gridY === this.spawnPos[1]) return;
-    if (gridX === this.nexusPos[0] && gridY === this.nexusPos[1]) return;
+    if (ui.inputMode === 'build' && ui.buildTowerType) {
+      // === BUILD MODE ===
+      if (!canPlace(this.gridData, gridX, gridY)) return;
+      if (gridX === this.spawnPos[0] && gridY === this.spawnPos[1]) return;
+      if (gridX === this.nexusPos[0] && gridY === this.nexusPos[1]) return;
 
-    // Check cost
-    const towerDef = TOWERS[ui.buildTowerType];
-    if (!towerDef || game.gold < towerDef.cost) return;
+      const towerDef = TOWERS[ui.buildTowerType];
+      if (!towerDef || game.gold < towerDef.cost) return;
 
-    // Validate path still exists
-    const testGrid = cloneGridWithBlock(this.gridData, gridX, gridY);
-    const testPfGrid = new PF.Grid(testGrid);
-    const testFinder = new PF.AStarFinder({ allowDiagonal: false });
-    const testPath = testFinder.findPath(
-      this.spawnPos[0], this.spawnPos[1],
-      this.nexusPos[0], this.nexusPos[1],
-      testPfGrid,
-    );
-    if (testPath.length === 0) return; // Would block all paths
+      const testGrid = cloneGridWithBlock(this.gridData, gridX, gridY);
+      const testPfGrid = new PF.Grid(testGrid);
+      const testFinder = new PF.AStarFinder({ allowDiagonal: false });
+      const testPath = testFinder.findPath(
+        this.spawnPos[0], this.spawnPos[1],
+        this.nexusPos[0], this.nexusPos[1],
+        testPfGrid,
+      );
+      if (testPath.length === 0) return;
 
-    // Place tower
-    this.gridData[gridY]![gridX] = 1;
-    const towerId = createTowerEntity(this.world, ui.buildTowerType, gridX, gridY);
+      this.gridData[gridY]![gridX] = 1;
+      const towerId = createTowerEntity(this.world, ui.buildTowerType, gridX, gridY);
 
-    // Create tower sprite
-    const { screenX, screenY } = gridToScreen(gridX, gridY, this.mapOffsetX, this.mapOffsetY);
-    const sprite = this.add.sprite(screenX + TILE_W / 2, screenY + TILE_H / 2, ui.buildTowerType);
-    sprite.setDepth(LAYER_ENTITIES_BASE + screenY);
-    this.entityLayer.add(sprite);
+      const { screenX, screenY } = gridToScreen(gridX, gridY, this.mapOffsetX, this.mapOffsetY);
+      const sprite = this.add.sprite(screenX + TILE_W / 2, screenY + TILE_H / 2, ui.buildTowerType);
+      sprite.setDepth(LAYER_ENTITIES_BASE + screenY);
+      this.entityLayer.add(sprite);
 
-    // Wire sprite to ECS
-    const renderable = this.world.getComponent(towerId, RenderableComponent)!;
-    renderable.sprite = sprite;
+      const renderable = this.world.getComponent(towerId, RenderableComponent)!;
+      renderable.sprite = sprite;
 
-    // Deduct gold
-    useGameStore.setState({ gold: game.gold - towerDef.cost });
-
-    // Recompute paths
-    this.computePath();
-
-    // Clear ghost
-    this.clearGhost();
+      useGameStore.setState({ gold: game.gold - towerDef.cost });
+      this.computePath();
+      this.clearGhost();
+    } else if (ui.inputMode === 'idle' || ui.inputMode === 'selected') {
+      // === TOWER SELECTION MODE ===
+      const towers = this.world.query(TowerDataComponent, PositionComponent);
+      for (const id of towers) {
+        const pos = this.world.getComponent(id, PositionComponent)!;
+        if (pos.gridX === gridX && pos.gridY === gridY) {
+          const towerData = this.world.getComponent(id, TowerDataComponent)!;
+          const attack = this.world.getComponent(id, AttackComponent)!;
+          const towerDef = TOWERS[towerData.towerId];
+          useGameStore.getState().projectSelectedTower({
+            id: String(id),
+            name: towerDef?.name ?? towerData.towerId,
+            tier: towerData.tier,
+            damage: attack.damage,
+            attackSpeed: attack.attackSpeed,
+            range: attack.range,
+            special: towerDef?.special ?? null,
+            upgradeCostA: towerDef?.upgradeCostTier2 ?? null,
+            upgradeCostB: null,
+            sellRefund: Math.floor((towerDef?.cost ?? 0) * 0.5),
+          });
+          useUIStore.getState().selectTower(String(id));
+          return;
+        }
+      }
+      // No tower found — deselect
+      useUIStore.getState().deselectTower();
+      useGameStore.getState().clearSelectedTower();
+    }
   }
 
   private handleHover(pointer: Phaser.Input.Pointer): void {
