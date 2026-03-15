@@ -23,6 +23,10 @@ export const SELL_REFUND_RATIO = 0.75;
 export const INTEREST_RATE = 0.1;
 export const INTEREST_CAP = 50;
 export const STARTING_GOLD: Record<number, number> = { 1: 650, 2: 800, 3: 1000 };
+export const PERFECT_WAVE_ESSENCE = 10;
+export const COMBO_ESSENCE_REWARD = 5;
+export const COMBO_ESSENCE_THRESHOLD = 25;
+export const FIRST_FUSION_ESSENCE = 25;
 
 // Scoring
 export const COMBO_WINDOW_MS = 2500;

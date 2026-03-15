@@ -1,3 +1,10 @@
+import {
+  PERFECT_WAVE_ESSENCE,
+  COMBO_ESSENCE_REWARD,
+  COMBO_ESSENCE_THRESHOLD,
+  FIRST_FUSION_ESSENCE,
+} from '../constants';
+
 /**
  * Returns the essence reward for killing a boss enemy.
  * Returns `bossEssenceReward` if the enemy is a boss and the reward is defined,
@@ -12,20 +19,20 @@ export function getBossEssence(enemy: { isBoss: boolean; bossEssenceReward?: num
  * Returns the essence bonus for completing a wave without any nexus damage.
  */
 export function getPerfectWaveEssence(): number {
-  return 10;
+  return PERFECT_WAVE_ESSENCE;
 }
 
 /**
  * Returns the essence bonus for reaching a combo threshold.
- * Awards 5 essence when comboCount is 25 or higher, otherwise 0.
+ * Awards essence when comboCount reaches the threshold, otherwise 0.
  */
 export function getComboEssence(comboCount: number): number {
-  return comboCount >= 25 ? 5 : 0;
+  return comboCount >= COMBO_ESSENCE_THRESHOLD ? COMBO_ESSENCE_REWARD : 0;
 }
 
 /**
  * Returns the one-time essence bonus for discovering a new fusion for the first time.
  */
 export function getFirstFusionEssence(): number {
-  return 25;
+  return FIRST_FUSION_ESSENCE;
 }
