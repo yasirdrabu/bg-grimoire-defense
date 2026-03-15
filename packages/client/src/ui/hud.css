@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --hud-gold: #ffd700;
+  --hud-essence: #b366ff;
+  --hud-hp: #f87171;
+  --hud-text: #e2e8f0;
+  --hud-muted: #94a3b8;
+  --hud-border: rgba(139, 105, 20, 0.4);
+  --hud-border-subtle: rgba(139, 105, 20, 0.3);
+  --hud-bg-dark: rgba(26, 15, 10, 0.92);
+  --hud-bg-slate: rgba(15, 23, 42, 0.85);
+}
+
+#ui-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#ui-overlay * {
+  box-sizing: border-box;
+}
+
+.hud-interactive {
+  pointer-events: auto;
+}
+
+.hud-panel-bg {
+  background: linear-gradient(180deg, var(--hud-bg-dark) 0%, var(--hud-bg-slate) 100%);
+  border-color: var(--hud-border);
+}
+
+.hud-gold-line {
+  background: linear-gradient(90deg, transparent, rgba(139, 105, 20, 0.5), transparent);
+}
+
+.hud-btn {
+  background: rgba(139, 105, 20, 0.1);
+  border: 1px solid var(--hud-border-subtle);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.hud-btn:hover {
+  background: rgba(139, 105, 20, 0.2);
+  border-color: var(--hud-border);
+}
+
+.hud-btn-active {
+  background: rgba(139, 105, 20, 0.25);
+  border-color: var(--hud-gold);
+}
+
+.hud-btn-disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.combo-enter {
+  animation: combo-fade-in 200ms ease-out;
+}
+
+.combo-exit {
+  animation: combo-fade-out 500ms ease-in forwards;
+}
+
+@keyframes combo-fade-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.8); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@keyframes combo-fade-out {
+  from { opacity: 1; transform: translateX(-50%) scale(1); }
+  to { opacity: 0; transform: translateX(-50%) scale(0.8); }
+}
