@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   TILE_W, TILE_H, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS,
   LAYER_GRID_OVERLAY, LAYER_ENTITIES_BASE,
-  TOWERS,
+  TOWERS, LEVELS, getSellRefund,
 } from '@grimoire/shared';
 import { gridToScreen, screenToGrid } from '../utils/isoMath';
 import { GameWorld } from '../ecs/World';
@@ -99,12 +99,13 @@ export class GameScene extends Phaser.Scene {
     this.computePath();
 
     // Initialize game state
+    const levelDef = LEVELS['act1_level1']!;
     useGameStore.setState({
-      gold: 650,
-      nexusHP: 5,
-      maxNexusHP: 5,
+      gold: levelDef.startingGold,
+      nexusHP: levelDef.maxNexusHP,
+      maxNexusHP: levelDef.maxNexusHP,
       wave: 0,
-      totalWaves: 5,
+      totalWaves: levelDef.waves.length,
       waveState: 'pre_wave',
       nextWaveEnemies: [{ enemyType: 'orc_grunt', count: 10 }],
     });
@@ -258,7 +259,7 @@ export class GameScene extends Phaser.Scene {
             special: towerDef?.special ?? null,
             upgradeCostA: towerDef?.upgradeCostTier2 ?? null,
             upgradeCostB: null,
-            sellRefund: Math.floor((towerDef?.cost ?? 0) * 0.5),
+            sellRefund: getSellRefund(towerDef?.cost ?? 0, 0),
           });
           useUIStore.getState().selectTower(String(id));
           return;

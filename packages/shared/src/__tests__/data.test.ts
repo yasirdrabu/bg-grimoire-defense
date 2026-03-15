@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TOWERS } from '../data/towers';
 import { ENEMIES } from '../data/enemies';
-import type { TowerDefinition } from '../types/tower';
-import type { EnemyDefinition } from '../types/enemy';
 import { getScaledHP } from '../types/enemy';
 
 describe('Tower data', () => {
@@ -12,7 +10,7 @@ describe('Tower data', () => {
   });
 
   it('should have Elven Archer Spire with correct archetype', () => {
-    const archer = TOWERS['elven_archer_spire'];
+    const archer = TOWERS['elven_archer_spire']!;
     expect(archer).toBeDefined();
     expect(archer.cost).toBe(100);
     expect(archer.range).toBe(4);
@@ -22,7 +20,7 @@ describe('Tower data', () => {
   });
 
   it('should have Gondorian Ballista as expensive DPS', () => {
-    const ballista = TOWERS['gondorian_ballista'];
+    const ballista = TOWERS['gondorian_ballista']!;
     expect(ballista).toBeDefined();
     expect(ballista.cost).toBe(300);
     expect(ballista.role).toBe('expensive_dps');
@@ -63,7 +61,7 @@ describe('Enemy data', () => {
   });
 
   it('should have Orc Grunt as tutorial enemy', () => {
-    const grunt = ENEMIES['orc_grunt'];
+    const grunt = ENEMIES['orc_grunt']!;
     expect(grunt).toBeDefined();
     expect(grunt.baseHP).toBe(50);
     expect(grunt.speed).toBe(1.0);
@@ -72,7 +70,7 @@ describe('Enemy data', () => {
   });
 
   it('should have Goblin Runner as fast low-HP enemy', () => {
-    const goblin = ENEMIES['goblin_runner'];
+    const goblin = ENEMIES['goblin_runner']!;
     expect(goblin).toBeDefined();
     expect(goblin.speed).toBeGreaterThan(1.5);
     expect(goblin.baseHP).toBeLessThan(50);
