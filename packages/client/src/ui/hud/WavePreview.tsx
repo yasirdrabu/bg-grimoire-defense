@@ -7,14 +7,23 @@ export function WavePreview() {
   const waveState = useStore(useGameStore, (s) => s.waveState);
   const nextWaveEnemies = useStore(useGameStore, (s) => s.nextWaveEnemies);
   const isGameOver = useStore(useGameStore, (s) => s.isGameOver);
+  const countdownRemainingMs = useStore(useGameStore, (s) => s.countdownRemainingMs);
 
   const canSend = (waveState === 'pre_wave' || waveState === 'wave_clear') && !isGameOver && wave < totalWaves;
+  const countdownSeconds = Math.ceil(countdownRemainingMs / 1000);
 
   return (
     <div class="hud-interactive fixed top-14 left-2 z-10">
       <div class="rounded-md border p-2 w-[150px]" style={{ background: 'var(--hud-bg-slate)', borderColor: 'var(--hud-border-subtle)' }}>
-        <div class="text-[11px] tracking-wide mb-1.5" style={{ color: '#c4a062' }}>
-          NEXT WAVE
+        <div class="flex justify-between items-center mb-1.5">
+          <div class="text-[11px] tracking-wide" style={{ color: '#c4a062' }}>
+            NEXT WAVE
+          </div>
+          {waveState === 'pre_wave' && countdownSeconds > 0 && (
+            <div class="text-[13px] font-mono font-bold" style={{ color: '#c4a062' }}>
+              {countdownSeconds}s
+            </div>
+          )}
         </div>
 
         {nextWaveEnemies.length > 0 ? (

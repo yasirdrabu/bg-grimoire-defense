@@ -12,8 +12,6 @@ import { AttackComponent } from '../ecs/components/Attack';
 import { TowerDataComponent } from '../ecs/components/TowerData';
 import { EnemyDataComponent } from '../ecs/components/EnemyData';
 import { HealthComponent } from '../ecs/components/Health';
-import { MovementComponent } from '../ecs/components/Movement';
-import { ProjectileComponent } from '../ecs/components/Projectile';
 
 // Systems
 import { inputSystem } from '../ecs/systems/InputSystem';
@@ -347,7 +345,14 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     const state = useGameStore.getState();
-    if (state.isGameOver || state.isPaused) return;
+
+    if (state.isGameOver) return;
+
+    // When paused: only run InputSystem for pause-safe actions (build, upgrade, sell, fuse, toggle_pause)
+    if (state.isPaused) {
+      inputSystem(this.world, 0);
+      return;
+    }
 
     const dt = delta * state.gameSpeed;
 
@@ -394,10 +399,12 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Project wave state from WaveSystem
+    // Project wave state and countdown from WaveSystem
     const ws = this.waveSystem.getState();
-    if (ws !== useGameStore.getState().waveState) {
-      useGameStore.setState({ waveState: ws });
+    const countdownRemaining = this.waveSystem.getRemainingCountdownMs();
+    const currentStoreState = useGameStore.getState();
+    if (ws !== currentStoreState.waveState || countdownRemaining !== currentStoreState.countdownRemainingMs) {
+      useGameStore.setState({ waveState: ws, countdownRemainingMs: countdownRemaining });
     }
 
     // Project next wave enemies for WavePreview UI
@@ -412,8 +419,9 @@ export class GameScene extends Phaser.Scene {
       useGameStore.setState({ nextWaveEnemies: [] });
     }
 
-    // Run ECS systems in spec order
+    // Run ECS systems in spec order (§4 Game Loop)
     inputSystem(this.world, dt);
+    // WaveSystem ticked above (event-based, not an ECS system function)
     enemyAISystem(this.world, dt);
     movementSystem(this.world, dt);
     targetingSystem(this.world, dt);

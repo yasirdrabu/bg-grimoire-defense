@@ -1,5 +1,5 @@
 import type { LevelDefinition, WaveDefinition, WaveEnemyGroup } from '@grimoire/shared';
-import { MIN_COUNTDOWN_SECONDS, WAVE_CLEAR_PAUSE_MS } from '@grimoire/shared';
+import { MIN_COUNTDOWN_SECONDS, WAVE_CLEAR_PAUSE_MS, COUNTDOWN_BASE, COUNTDOWN_REDUCTION } from '@grimoire/shared';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ export class WaveSystem {
   /** Skip the PRE_WAVE countdown and begin spawning immediately. */
   sendWaveEarly(): void {
     if (this.state === 'pre_wave') {
-      this.countdownMs = MIN_COUNTDOWN_SECONDS * 1000; // mark countdown as done
+      this.countdownMs = this.getCountdownDurationMs(); // mark countdown as done
     }
   }
 
@@ -114,6 +114,21 @@ export class WaveSystem {
     this.clearTimer = 0;
   }
 
+  /** Returns the countdown duration in ms for the current wave, based on act and wave index. */
+  getCountdownDurationMs(): number {
+    const act = this.levelDef.act;
+    const base = COUNTDOWN_BASE[act] ?? COUNTDOWN_BASE[1]!;
+    const reduction = COUNTDOWN_REDUCTION[act] ?? COUNTDOWN_REDUCTION[1]!;
+    const seconds = Math.max(MIN_COUNTDOWN_SECONDS, base - this.waveIndex * reduction);
+    return seconds * 1000;
+  }
+
+  /** Returns the remaining countdown time in ms (0 if not in pre_wave). */
+  getRemainingCountdownMs(): number {
+    if (this.state !== 'pre_wave') return 0;
+    return Math.max(0, this.getCountdownDurationMs() - this.countdownMs);
+  }
+
   private tickPreWave(deltaMs: number, events: WaveSystemEvent[]): void {
     // Emit APPLY_INTEREST once at the start of each PRE_WAVE phase, but skip wave 0
     if (!this.interestApplied) {
@@ -125,7 +140,7 @@ export class WaveSystem {
 
     this.countdownMs += deltaMs;
 
-    if (this.countdownMs >= MIN_COUNTDOWN_SECONDS * 1000) {
+    if (this.countdownMs >= this.getCountdownDurationMs()) {
       this.enterSpawning(events);
     }
   }

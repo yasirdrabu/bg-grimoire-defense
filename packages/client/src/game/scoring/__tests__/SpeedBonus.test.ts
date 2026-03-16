@@ -11,27 +11,27 @@ describe('SpeedBonus', () => {
       expect(calculateSpeedBonus(70000, 60000)).toBe(0);
     });
 
-    it('should return 250 for clearing in half the par time', () => {
-      // (60000 - 30000) / 60000 * 500 = 250
-      expect(calculateSpeedBonus(30000, 60000)).toBe(250);
+    it('should return 500 for clearing in half the par time', () => {
+      // (60000 - 30000) / 60000 * 1000 = 500
+      expect(calculateSpeedBonus(30000, 60000)).toBe(500);
     });
 
-    it('should return max 500 for clearing in zero time', () => {
-      expect(calculateSpeedBonus(0, 60000)).toBe(500);
+    it('should return max 1000 for clearing in zero time', () => {
+      expect(calculateSpeedBonus(0, 60000)).toBe(1000);
     });
 
     it('should floor the result', () => {
-      // (60000 - 40001) / 60000 * 500 = 166.658... => floor = 166
-      expect(calculateSpeedBonus(40001, 60000)).toBe(166);
+      // (60000 - 40001) / 60000 * 1000 = 333.316... => floor = 333
+      expect(calculateSpeedBonus(40001, 60000)).toBe(333);
     });
 
-    it('should return 500 for a very fast clear', () => {
-      // 1ms clear on 60s par => floor((60000-1)/60000*500) = floor(499.99...) = 499
-      expect(calculateSpeedBonus(1, 60000)).toBe(499);
+    it('should return 999 for a very fast clear', () => {
+      // 1ms clear on 60s par => floor((60000-1)/60000*1000) = floor(999.98...) = 999
+      expect(calculateSpeedBonus(1, 60000)).toBe(999);
     });
 
     it('should handle exact maximum bonus (clear at 0)', () => {
-      expect(calculateSpeedBonus(0, 120000)).toBe(500);
+      expect(calculateSpeedBonus(0, 120000)).toBe(1000);
     });
   });
 

@@ -31,12 +31,15 @@ export const FIRST_FUSION_ESSENCE = 25;
 // Scoring
 export const COMBO_WINDOW_MS = 2500;
 export const MAX_GAME_SPEED = 3;
-export const MAX_SPEED_BONUS = 500;
+export const MAX_SPEED_BONUS = 1000;
 export const MAX_POINTS_PER_WAVE = 50000;
 
 // Waves
 export const WAVE_CLEAR_PAUSE_MS = 2000;
 export const MIN_COUNTDOWN_SECONDS = 8;
+// Per-act pre-wave countdown: baseCountdown - (waveIndex * reductionPerWave), min MIN_COUNTDOWN_SECONDS
+export const COUNTDOWN_BASE: Record<number, number> = { 1: 25, 2: 20, 3: 15 };
+export const COUNTDOWN_REDUCTION: Record<number, number> = { 1: 1, 2: 1, 3: 0.5 };
 
 // Scene transitions
 export const SCENE_FADE_MS = 300;

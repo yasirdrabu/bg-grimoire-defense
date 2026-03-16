@@ -24,7 +24,7 @@ const ENRAGE_SPEED_MULTIPLIER = 1.5;
 const TOWER_SMASH_RANGE = 1.5; // tiles
 const TOWER_SMASH_DURATION_MS = 3000;
 const FEAR_AURA_RANGE = 3; // tiles
-const FEAR_ATTACK_SPEED_MULTIPLIER = 1.25; // 25% slower = ~20% less DPS
+const FEAR_ATTACK_SPEED_MULTIPLIER = 1.25; // interval * 1.25 = 20% DPS reduction (spec: "reduces attack speed by 20%")
 
 /**
  * Processes active enemy abilities each frame:

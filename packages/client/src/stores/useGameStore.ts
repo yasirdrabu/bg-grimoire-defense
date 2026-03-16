@@ -44,6 +44,9 @@ export interface GameState {
     sellRefund: number;
   } | null;
 
+  // Pre-wave countdown (projected by GameScene for WavePreview UI)
+  countdownRemainingMs: number;
+
   // Send wave early flag (set by InputSystem, consumed by GameScene)
   sendWaveEarlyFlag: boolean;
 
@@ -76,6 +79,7 @@ const DEFAULT_STATE = {
   waveState: 'pre_wave' as WaveState,
   nextWaveEnemies: [] as Array<{ enemyType: string; count: number }>,
   selectedTowerData: null as GameState['selectedTowerData'],
+  countdownRemainingMs: 0,
   sendWaveEarlyFlag: false,
   pendingActions: [] as GameAction[],
 };

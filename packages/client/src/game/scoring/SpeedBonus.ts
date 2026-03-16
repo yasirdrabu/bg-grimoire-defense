@@ -2,8 +2,8 @@ import { MAX_SPEED_BONUS } from '@grimoire/shared';
 
 /**
  * Calculates a speed bonus for clearing a wave faster than par time.
- * Formula: Math.floor((parTime - clearTime) / parTime * 500)
- * Returns 0 if clearTime >= parTime. Maximum of 500.
+ * Formula: Math.floor((parTime - clearTime) / parTime * 1000)
+ * Returns 0 if clearTime >= parTime. Maximum of 1000.
  */
 export function calculateSpeedBonus(clearTimeMs: number, parTimeMs: number): number {
   if (clearTimeMs >= parTimeMs || parTimeMs <= 0) return 0;
