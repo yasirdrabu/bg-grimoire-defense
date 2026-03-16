@@ -37,6 +37,9 @@ import { canPlace, cloneGridWithBlock, createGrid } from '../towers/TowerPlaceme
 import { useGameStore } from '../../stores/useGameStore';
 import { useUIStore } from '../../stores/useUIStore';
 
+// Tutorial
+import { TutorialManager } from '../tutorial/TutorialManager';
+
 // Pathfinding
 import PF from 'pathfinding';
 
@@ -58,6 +61,9 @@ export class GameScene extends Phaser.Scene {
   // Wave management
   private waveSystem!: WaveSystem;
   private currentPath: [number, number][] = [];
+
+  // Tutorial
+  private tutorialManager: TutorialManager | null = null;
 
   // Ghost preview
   private ghostSprite: Phaser.GameObjects.Sprite | null = null;
@@ -101,6 +107,11 @@ export class GameScene extends Phaser.Scene {
     // Initialize game state
     const levelDef = LEVELS['act1_level1']!;
     this.waveSystem = new WaveSystem(levelDef);
+
+    // Wire tutorial for act1_level1
+    if (levelDef.id === 'act1_level1') {
+      this.tutorialManager = new TutorialManager('act1_level1');
+    }
     const firstWave = levelDef.waves[0];
     useGameStore.setState({
       gold: levelDef.startingGold,
@@ -412,6 +423,19 @@ export class GameScene extends Phaser.Scene {
     deathSystem(this.world, dt);
     nexusSystem(this.world, dt, this.nexusPos[0], this.nexusPos[1]);
     scoreSystem(this.world, dt);
+
+    // Tick tutorial
+    if (this.tutorialManager?.isActive()) {
+      const towerCount = this.world.query(TowerDataComponent).length;
+      this.tutorialManager.tick(
+        {
+          towerCount,
+          waveStarted: this.waveSystem.getState() !== 'pre_wave',
+          goldAmount: state.gold,
+        },
+        dt,
+      );
+    }
 
     this.renderEntities();
   }

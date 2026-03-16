@@ -11,6 +11,12 @@ export interface UIState {
   activeTab: HubTab;
   showPathOverlay: boolean;
 
+  // Tutorial state
+  tutorialStep: number;
+  tutorialMessage: string;
+  tutorialHighlight: { gridX: number; gridY: number } | null;
+  tutorialActive: boolean;
+
   enterBuildMode: (towerType: string) => void;
   exitBuildMode: () => void;
   selectTower: (towerId: string) => void;
@@ -18,6 +24,12 @@ export interface UIState {
   setHoveredEntity: (entityId: string | null) => void;
   setActiveTab: (tab: HubTab) => void;
   togglePathOverlay: () => void;
+
+  // Tutorial actions
+  advanceTutorial: () => void;
+  setTutorialMessage: (msg: string) => void;
+  setTutorialHighlight: (pos: { gridX: number; gridY: number } | null) => void;
+  completeTutorial: () => void;
 }
 
 export const useUIStore = createStore<UIState>((set) => ({
@@ -27,6 +39,12 @@ export const useUIStore = createStore<UIState>((set) => ({
   hoveredEntityId: null,
   activeTab: 'none',
   showPathOverlay: false,
+
+  // Tutorial initial state
+  tutorialStep: 0,
+  tutorialMessage: '',
+  tutorialHighlight: null,
+  tutorialActive: false,
 
   enterBuildMode: (towerType: string) => {
     set({ inputMode: 'build', buildTowerType: towerType, selectedTowerId: null });
@@ -54,5 +72,21 @@ export const useUIStore = createStore<UIState>((set) => ({
 
   togglePathOverlay: () => {
     set((state) => ({ showPathOverlay: !state.showPathOverlay }));
+  },
+
+  advanceTutorial: () => {
+    set((state) => ({ tutorialStep: state.tutorialStep + 1 }));
+  },
+
+  setTutorialMessage: (msg: string) => {
+    set({ tutorialMessage: msg });
+  },
+
+  setTutorialHighlight: (pos: { gridX: number; gridY: number } | null) => {
+    set({ tutorialHighlight: pos });
+  },
+
+  completeTutorial: () => {
+    set({ tutorialActive: false, tutorialStep: 6, tutorialMessage: '', tutorialHighlight: null });
   },
 }));
