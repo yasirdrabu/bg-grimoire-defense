@@ -1,7 +1,9 @@
 import type { World } from '@grimoire/shared';
+import { getKillGold } from '@grimoire/shared';
 import { HealthComponent } from '../components/Health';
 import { EnemyDataComponent } from '../components/EnemyData';
 import { useGameStore } from '../../../stores/useGameStore';
+import { getComboTracker, getElapsedMs } from './ScoreSystem';
 
 export function deathSystem(world: World, _dt: number): void {
   const entities = world.query(HealthComponent, EnemyDataComponent);
@@ -12,12 +14,16 @@ export function deathSystem(world: World, _dt: number): void {
 
     const enemyData = world.getComponent(id, EnemyDataComponent)!;
 
-    // Award gold and score
+    // Award gold and score via GoldManager
+    const goldEarned = getKillGold(enemyData);
     const state = useGameStore.getState();
     useGameStore.setState({
-      gold: state.gold + enemyData.goldReward,
+      gold: state.gold + goldEarned,
       score: state.score + enemyData.scoreValue,
     });
+
+    // Register kill with combo tracker
+    getComboTracker().registerKill(getElapsedMs());
 
     // Destroy entity
     world.destroyEntity(id);

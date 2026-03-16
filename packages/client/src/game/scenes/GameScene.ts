@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   TILE_W, TILE_H, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS,
   LAYER_GRID_OVERLAY, LAYER_ENTITIES_BASE,
-  TOWERS, LEVELS, getSellRefund,
+  TOWERS, LEVELS, getSellRefund, calculateInterest, getWaveClearBonus,
 } from '@grimoire/shared';
 import { gridToScreen, screenToGrid } from '../utils/isoMath';
 import { GameWorld } from '../ecs/World';
@@ -17,6 +17,7 @@ import { ProjectileComponent } from '../ecs/components/Projectile';
 
 // Systems
 import { inputSystem } from '../ecs/systems/InputSystem';
+import { enemyAISystem } from '../enemies/EnemyAI';
 import { movementSystem } from '../ecs/systems/MovementSystem';
 import { targetingSystem } from '../ecs/systems/TargetingSystem';
 import { attackSystem } from '../ecs/systems/AttackSystem';
@@ -24,6 +25,8 @@ import { projectileSystem } from '../ecs/systems/ProjectileSystem';
 import { statusEffectSystem } from '../ecs/systems/StatusEffectSystem';
 import { deathSystem } from '../ecs/systems/DeathSystem';
 import { nexusSystem } from '../ecs/systems/NexusSystem';
+import { scoreSystem } from '../ecs/systems/ScoreSystem';
+import { WaveSystem } from '../ecs/systems/WaveSystem';
 
 // Factories
 import { createTowerEntity } from '../towers/TowerFactory';
@@ -52,11 +55,8 @@ export class GameScene extends Phaser.Scene {
   private spawnPos: [number, number] = [0, 7];
   private nexusPos: [number, number] = [19, 7];
 
-  // Wave state
-  private waveActive = false;
-  private enemiesToSpawn = 0;
-  private spawnTimer = 0;
-  private spawnInterval = 500; // ms between spawns
+  // Wave management
+  private waveSystem!: WaveSystem;
   private currentPath: [number, number][] = [];
 
   // Ghost preview
@@ -100,6 +100,8 @@ export class GameScene extends Phaser.Scene {
 
     // Initialize game state
     const levelDef = LEVELS['act1_level1']!;
+    this.waveSystem = new WaveSystem(levelDef);
+    const firstWave = levelDef.waves[0];
     useGameStore.setState({
       gold: levelDef.startingGold,
       nexusHP: levelDef.maxNexusHP,
@@ -107,7 +109,9 @@ export class GameScene extends Phaser.Scene {
       wave: 0,
       totalWaves: levelDef.waves.length,
       waveState: 'pre_wave',
-      nextWaveEnemies: [{ enemyType: 'orc_grunt', count: 10 }],
+      nextWaveEnemies: firstWave
+        ? firstWave.enemies.map(g => ({ enemyType: g.type, count: g.count }))
+        : [],
     });
 
     // Input: click to place towers
@@ -150,7 +154,9 @@ export class GameScene extends Phaser.Scene {
       useUIStore.getState().exitBuildMode();
       this.clearGhost();
     });
-    this.input.keyboard?.on('keydown-SPACE', () => this.startWave());
+    this.input.keyboard?.on('keydown-SPACE', () => {
+      useGameStore.setState({ sendWaveEarlyFlag: true });
+    });
   }
 
   private drawGrid(): void {
@@ -328,46 +334,76 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private startWave(): void {
-    if (this.waveActive) return;
-
-    const state = useGameStore.getState();
-    if (state.wave >= state.totalWaves) return;
-
-    this.waveActive = true;
-    this.enemiesToSpawn = 10 + state.wave * 2; // escalating count
-    this.spawnTimer = 0;
-    useGameStore.setState({ wave: state.wave + 1, waveState: 'spawning' });
-  }
-
   update(_time: number, delta: number): void {
     const state = useGameStore.getState();
     if (state.isGameOver || state.isPaused) return;
 
+    const dt = delta * state.gameSpeed;
+
     // Handle send wave early flag
     if (state.sendWaveEarlyFlag) {
       useGameStore.setState({ sendWaveEarlyFlag: false });
-      this.startWave();
+      this.waveSystem.sendWaveEarly();
     }
 
-    const dt = delta * state.gameSpeed;
+    // Count alive enemies for WaveSystem
+    const aliveEnemies = this.world.query(EnemyDataComponent, HealthComponent)
+      .filter(id => (this.world.getComponent(id, HealthComponent)?.current ?? 0) > 0);
 
-    // Spawn enemies
-    if (this.waveActive && this.enemiesToSpawn > 0) {
-      this.spawnTimer += dt;
-      if (this.spawnTimer >= this.spawnInterval) {
-        this.spawnTimer -= this.spawnInterval;
-        this.spawnEnemy();
-        this.enemiesToSpawn--;
-        if (this.enemiesToSpawn <= 0) {
-          this.waveActive = false;
+    // Tick wave system
+    const waveEvents = this.waveSystem.tick(dt, aliveEnemies.length);
+
+    // Process wave events
+    for (const event of waveEvents) {
+      switch (event.type) {
+        case 'SPAWN_ENEMY':
+          this.spawnEnemy(event.enemyType);
+          break;
+        case 'WAVE_STARTED':
+          useGameStore.setState({ wave: event.waveIndex + 1, waveState: 'spawning' });
+          break;
+        case 'WAVE_CLEARED': {
+          const currentGold = useGameStore.getState().gold;
+          const waveClearBonus = getWaveClearBonus(event.waveIndex);
+          useGameStore.setState({
+            waveState: 'wave_clear',
+            gold: currentGold + waveClearBonus,
+          });
+          break;
         }
+        case 'APPLY_INTEREST': {
+          const currentGold = useGameStore.getState().gold;
+          const interest = calculateInterest(currentGold);
+          useGameStore.setState({ gold: currentGold + interest });
+          break;
+        }
+        case 'LEVEL_COMPLETE':
+          useGameStore.setState({ waveState: 'level_complete' });
+          break;
       }
+    }
+
+    // Project wave state from WaveSystem
+    const ws = this.waveSystem.getState();
+    if (ws !== useGameStore.getState().waveState) {
+      useGameStore.setState({ waveState: ws });
+    }
+
+    // Project next wave enemies for WavePreview UI
+    const levelDef = LEVELS['act1_level1']!;
+    const nextWaveIdx = this.waveSystem.getCurrentWaveIndex();
+    const nextWave = levelDef.waves[nextWaveIdx];
+    if (nextWave) {
+      useGameStore.setState({
+        nextWaveEnemies: nextWave.enemies.map(g => ({ enemyType: g.type, count: g.count })),
+      });
+    } else {
+      useGameStore.setState({ nextWaveEnemies: [] });
     }
 
     // Run ECS systems in spec order
     inputSystem(this.world, dt);
-    // waveSystem — handled above for now
+    enemyAISystem(this.world, dt);
     movementSystem(this.world, dt);
     targetingSystem(this.world, dt);
     attackSystem(this.world, dt);
@@ -375,44 +411,17 @@ export class GameScene extends Phaser.Scene {
     statusEffectSystem(this.world, dt);
     deathSystem(this.world, dt);
     nexusSystem(this.world, dt, this.nexusPos[0], this.nexusPos[1]);
-    // scoreSystem — Phase 2
-
-    // Check wave state transitions
-    const currentWaveState = useGameStore.getState().waveState;
-    if (currentWaveState === 'spawning' || currentWaveState === 'active') {
-      const livingEnemies = this.world.query(EnemyDataComponent, HealthComponent);
-      const anyAlive = livingEnemies.some((id) => {
-        const health = this.world.getComponent(id, HealthComponent)!;
-        return health.current > 0;
-      });
-
-      if (!anyAlive && !this.waveActive) {
-        // All enemies dead and spawning complete
-        useGameStore.setState({ waveState: 'wave_clear' });
-        // Project next wave enemies
-        if (state.wave < state.totalWaves) {
-          const count = 10 + state.wave * 2;
-          useGameStore.setState({
-            nextWaveEnemies: [{ enemyType: 'orc_grunt', count }],
-          });
-        } else {
-          useGameStore.setState({ nextWaveEnemies: [] });
-        }
-      } else if (!this.waveActive && currentWaveState === 'spawning') {
-        // Spawning finished but enemies still alive
-        useGameStore.setState({ waveState: 'active' });
-      }
-    }
+    scoreSystem(this.world, dt);
 
     this.renderEntities();
   }
 
-  private spawnEnemy(): void {
+  private spawnEnemy(enemyType: string): void {
     if (this.currentPath.length === 0) return;
 
     const enemyId = createEnemyEntity(
       this.world,
-      'orc_grunt',
+      enemyType,
       this.spawnPos[0],
       this.spawnPos[1],
       [...this.currentPath],
@@ -424,7 +433,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnPos[0], this.spawnPos[1],
       this.mapOffsetX, this.mapOffsetY,
     );
-    const sprite = this.add.sprite(screenX + TILE_W / 2, screenY + TILE_H / 2, 'orc_grunt');
+    const sprite = this.add.sprite(screenX + TILE_W / 2, screenY + TILE_H / 2, enemyType);
     sprite.setDepth(LAYER_ENTITIES_BASE + screenY);
     this.entityLayer.add(sprite);
 
