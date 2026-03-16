@@ -4,12 +4,17 @@ import { AttackComponent } from '../components/Attack';
 import { TowerDataComponent } from '../components/TowerData';
 import { ProjectileComponent } from '../components/Projectile';
 import { RenderableComponent } from '../components/Renderable';
+import { TowerDisabledComponent } from '../components/TowerDisabled';
 
 export function attackSystem(world: World, dt: number): void {
   const dtSec = dt / 1000;
   const towers = world.query(PositionComponent, AttackComponent, TowerDataComponent);
 
   for (const towerId of towers) {
+    // Skip disabled towers (e.g. stunned by Cave Troll's Tower Smash)
+    const disabled = world.getComponent(towerId, TowerDisabledComponent);
+    if (disabled && disabled.remainingMs > 0) continue;
+
     const attack = world.getComponent(towerId, AttackComponent)!;
     const towerPos = world.getComponent(towerId, PositionComponent)!;
 
