@@ -51,6 +51,11 @@ export function canUpgrade(
  * tier-3 upgrades).
  *
  * Bonuses are ADDITIVE based on the tower's **base** stats (from `towerDef`).
+ * Bonus conventions:
+ * - `damageBonus`: fraction of base (0.3 = +30% of towerDef.damage)
+ * - `rangeBonus`: flat tile increment (0.5 = +0.5 tiles)
+ * - `attackSpeedBonus`: fraction of base (negative = faster; -0.1 = -10% of towerDef.attackSpeed)
+ *
  * For example, a damageBonus of 0.3 adds 30% of `towerDef.damage` to the
  * current `attack.damage`.
  *

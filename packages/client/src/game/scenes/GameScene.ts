@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   TILE_W, TILE_H, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS,
   LAYER_GRID_OVERLAY, LAYER_ENTITIES_BASE,
-  TOWERS, LEVELS, getSellRefund, calculateInterest, getWaveClearBonus,
+  TOWERS, TOWER_UPGRADES, LEVELS, getSellRefund, calculateInterest, getWaveClearBonus,
 } from '@grimoire/shared';
 import { gridToScreen, screenToGrid } from '../utils/isoMath';
 import { GameWorld } from '../ecs/World';
@@ -264,6 +264,9 @@ export class GameScene extends Phaser.Scene {
           const towerData = this.world.getComponent(id, TowerDataComponent)!;
           const attack = this.world.getComponent(id, AttackComponent)!;
           const towerDef = TOWERS[towerData.towerId];
+          const upgradeData = TOWER_UPGRADES[towerData.towerId];
+          const isTier1 = towerData.tier === 1;
+          const isTier2 = towerData.tier === 2;
           useGameStore.getState().projectSelectedTower({
             id: String(id),
             name: towerDef?.name ?? towerData.towerId,
@@ -272,9 +275,19 @@ export class GameScene extends Phaser.Scene {
             attackSpeed: attack.attackSpeed,
             range: attack.range,
             special: towerDef?.special ?? null,
-            upgradeCostA: towerDef?.upgradeCostTier2 ?? null,
-            upgradeCostB: null,
-            sellRefund: getSellRefund(towerDef?.cost ?? 0, 0),
+            upgradeCostA: isTier1
+              ? (towerDef?.upgradeCostTier2 ?? null)
+              : isTier2
+                ? (towerDef?.upgradeCostTier3 ?? null)
+                : null,
+            upgradeCostAEssence: isTier2 ? (towerDef?.essenceCostTier3 ?? null) : null,
+            upgradeCostB: isTier2 ? (towerDef?.upgradeCostTier3 ?? null) : null,
+            upgradeCostBEssence: isTier2 ? (towerDef?.essenceCostTier3 ?? null) : null,
+            upgradeNameA: isTier2 ? (upgradeData?.tier3A.name ?? null) : null,
+            upgradeNameB: isTier2 ? (upgradeData?.tier3B.name ?? null) : null,
+            upgradeDescA: isTier2 ? (upgradeData?.tier3A.specialAbility ?? null) : null,
+            upgradeDescB: isTier2 ? (upgradeData?.tier3B.specialAbility ?? null) : null,
+            sellRefund: getSellRefund(towerDef?.cost ?? 0, towerData.totalInvestment - (towerDef?.cost ?? 0)),
           });
           useUIStore.getState().selectTower(String(id));
           return;

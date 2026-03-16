@@ -5,12 +5,28 @@ import { useUIStore } from '../../stores/useUIStore';
 export function TowerInfo() {
   const data = useStore(useGameStore, (s) => s.selectedTowerData);
   const gold = useStore(useGameStore, (s) => s.gold);
+  const essence = useStore(useGameStore, (s) => s.essence);
   const isGameOver = useStore(useGameStore, (s) => s.isGameOver);
 
   if (!data) return null;
 
-  const canUpgradeA = data.upgradeCostA !== null && gold >= data.upgradeCostA && !isGameOver;
-  const canUpgradeB = data.upgradeCostB !== null && gold >= data.upgradeCostB && !isGameOver;
+  const isTier1 = data.tier === 1;
+  const isTier2 = data.tier === 2;
+
+  // Tier 1: single upgrade button (branch A holds the gold cost, no essence)
+  // Tier 2: two branch buttons each with gold + essence cost
+  const canAffordA =
+    data.upgradeCostA !== null &&
+    gold >= data.upgradeCostA &&
+    (data.upgradeCostAEssence === null || essence >= data.upgradeCostAEssence);
+
+  const canAffordB =
+    data.upgradeCostB !== null &&
+    gold >= data.upgradeCostB &&
+    (data.upgradeCostBEssence === null || essence >= data.upgradeCostBEssence);
+
+  const canUpgradeA = canAffordA && !isGameOver;
+  const canUpgradeB = canAffordB && !isGameOver;
 
   return (
     <div class="flex items-center gap-4 px-4 w-full">
@@ -27,7 +43,9 @@ export function TowerInfo() {
         <span class="text-xs italic" style={{ color: '#c4a062' }}>{data.special}</span>
       )}
       <div class="flex-1" />
-      {data.upgradeCostA !== null && (
+
+      {/* Tier 1: single Upgrade button (no branch selection needed) */}
+      {isTier1 && data.upgradeCostA !== null && (
         <button
           class={`hud-btn px-2 py-1 text-xs ${canUpgradeA ? '' : 'hud-btn-disabled'}`}
           onClick={() => {
@@ -36,23 +54,59 @@ export function TowerInfo() {
             }
           }}
         >
-          <span style={{ color: 'var(--hud-text)' }}>Upgrade A</span>
+          <span style={{ color: 'var(--hud-text)' }}>Upgrade</span>
           <span class="ml-1" style={{ color: 'var(--hud-gold)' }}>{data.upgradeCostA}g</span>
         </button>
       )}
-      {data.upgradeCostB !== null && (
+
+      {/* Tier 2: Branch A button (blue accent) */}
+      {isTier2 && data.upgradeCostA !== null && (
+        <button
+          class={`hud-btn px-2 py-1 text-xs ${canUpgradeA ? '' : 'hud-btn-disabled'}`}
+          style={{ borderColor: '#3b82f6' }}
+          onClick={() => {
+            if (canUpgradeA) {
+              useGameStore.getState().dispatch({ type: 'UPGRADE_TOWER', towerId: data.id, branch: 'A' });
+            }
+          }}
+        >
+          <span style={{ color: '#60a5fa' }}>
+            {data.upgradeNameA ?? 'Upgrade A'}
+          </span>
+          {data.upgradeDescA && (
+            <span class="ml-1 italic" style={{ color: 'var(--hud-muted)' }}>{data.upgradeDescA}</span>
+          )}
+          <span class="ml-1" style={{ color: 'var(--hud-gold)' }}>{data.upgradeCostA}g</span>
+          {data.upgradeCostAEssence !== null && data.upgradeCostAEssence > 0 && (
+            <span class="ml-1" style={{ color: '#a78bfa' }}>+{data.upgradeCostAEssence}e</span>
+          )}
+        </button>
+      )}
+
+      {/* Tier 2: Branch B button (red accent) */}
+      {isTier2 && data.upgradeCostB !== null && (
         <button
           class={`hud-btn px-2 py-1 text-xs ${canUpgradeB ? '' : 'hud-btn-disabled'}`}
+          style={{ borderColor: '#ef4444' }}
           onClick={() => {
             if (canUpgradeB) {
               useGameStore.getState().dispatch({ type: 'UPGRADE_TOWER', towerId: data.id, branch: 'B' });
             }
           }}
         >
-          <span style={{ color: 'var(--hud-text)' }}>Upgrade B</span>
+          <span style={{ color: '#f87171' }}>
+            {data.upgradeNameB ?? 'Upgrade B'}
+          </span>
+          {data.upgradeDescB && (
+            <span class="ml-1 italic" style={{ color: 'var(--hud-muted)' }}>{data.upgradeDescB}</span>
+          )}
           <span class="ml-1" style={{ color: 'var(--hud-gold)' }}>{data.upgradeCostB}g</span>
+          {data.upgradeCostBEssence !== null && data.upgradeCostBEssence > 0 && (
+            <span class="ml-1" style={{ color: '#a78bfa' }}>+{data.upgradeCostBEssence}e</span>
+          )}
         </button>
       )}
+
       <button
         class={`hud-btn px-2 py-1 text-xs ${isGameOver ? 'hud-btn-disabled' : ''}`}
         onClick={() => {

@@ -27,8 +27,12 @@ describe('BottomBar', () => {
     useGameStore.setState({
       selectedTowerData: {
         id: 'tower-1', name: 'Elven Archer Spire', tier: 1, damage: 15,
-        attackSpeed: 0.8, range: 4, special: null, upgradeCostA: 60,
-        upgradeCostB: null, sellRefund: 50,
+        attackSpeed: 0.8, range: 4, special: null,
+        upgradeCostA: 60, upgradeCostAEssence: null,
+        upgradeCostB: null, upgradeCostBEssence: null,
+        upgradeNameA: null, upgradeNameB: null,
+        upgradeDescA: null, upgradeDescB: null,
+        sellRefund: 50,
       },
     });
     render(<BottomBar />);

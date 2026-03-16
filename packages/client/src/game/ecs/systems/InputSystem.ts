@@ -63,7 +63,7 @@ export function inputSystem(world: World, _dt: number): void {
         towerData.totalInvestment += cost.gold;
 
         // Re-project selected tower data to store
-        const nextState = useGameStore.getState();
+        const isTier2 = towerData.tier === 2;
         useGameStore.getState().projectSelectedTower({
           id: towerId,
           name: towerDef.name,
@@ -72,11 +72,16 @@ export function inputSystem(world: World, _dt: number): void {
           attackSpeed: attack.attackSpeed,
           range: attack.range,
           special: towerDef.special ?? null,
-          upgradeCostA: towerData.tier < 3 ? towerDef.upgradeCostTier3 : null,
-          upgradeCostB: towerData.tier < 3 ? towerDef.upgradeCostTier3 : null,
+          upgradeCostA: isTier2 ? towerDef.upgradeCostTier3 : null,
+          upgradeCostAEssence: isTier2 ? towerDef.essenceCostTier3 : null,
+          upgradeCostB: isTier2 ? towerDef.upgradeCostTier3 : null,
+          upgradeCostBEssence: isTier2 ? towerDef.essenceCostTier3 : null,
+          upgradeNameA: isTier2 ? (upgradeData.tier3A.name) : null,
+          upgradeNameB: isTier2 ? (upgradeData.tier3B.name) : null,
+          upgradeDescA: isTier2 ? (upgradeData.tier3A.specialAbility ?? null) : null,
+          upgradeDescB: isTier2 ? (upgradeData.tier3B.specialAbility ?? null) : null,
           sellRefund: getSellRefund(towerDef.cost, towerData.totalInvestment - towerDef.cost),
         });
-        void nextState; // suppress unused variable warning
         break;
       }
 

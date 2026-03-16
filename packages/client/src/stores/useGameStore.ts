@@ -40,7 +40,13 @@ export interface GameState {
     range: number;
     special: string | null;
     upgradeCostA: number | null;
+    upgradeCostAEssence: number | null;
     upgradeCostB: number | null;
+    upgradeCostBEssence: number | null;
+    upgradeNameA: string | null;
+    upgradeNameB: string | null;
+    upgradeDescA: string | null;
+    upgradeDescB: string | null;
     sellRefund: number;
   } | null;
 

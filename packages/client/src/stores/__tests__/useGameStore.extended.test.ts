@@ -17,7 +17,13 @@ describe('useGameStore - extended', () => {
         range: 5,
         special: 'pierce',
         upgradeCostA: 150,
+        upgradeCostAEssence: 50,
         upgradeCostB: 200,
+        upgradeCostBEssence: 50,
+        upgradeNameA: 'Eagle Eye',
+        upgradeNameB: 'Storm of Arrows',
+        upgradeDescA: 'Critical hit 15%',
+        upgradeDescB: 'Multishot (2 targets)',
         sellRefund: 75,
       };
 
@@ -28,11 +34,17 @@ describe('useGameStore - extended', () => {
     it('should overwrite previous tower selection', () => {
       useGameStore.getState().projectSelectedTower({
         id: '1', name: 'Tower A', tier: 1, damage: 10, attackSpeed: 1, range: 3,
-        special: null, upgradeCostA: null, upgradeCostB: null, sellRefund: 50,
+        special: null, upgradeCostA: null, upgradeCostAEssence: null,
+        upgradeCostB: null, upgradeCostBEssence: null,
+        upgradeNameA: null, upgradeNameB: null, upgradeDescA: null, upgradeDescB: null,
+        sellRefund: 50,
       });
       useGameStore.getState().projectSelectedTower({
         id: '2', name: 'Tower B', tier: 2, damage: 20, attackSpeed: 0.5, range: 4,
-        special: 'splash', upgradeCostA: 100, upgradeCostB: null, sellRefund: 100,
+        special: 'splash', upgradeCostA: 100, upgradeCostAEssence: 50,
+        upgradeCostB: null, upgradeCostBEssence: null,
+        upgradeNameA: 'Branch A', upgradeNameB: null, upgradeDescA: 'Some ability', upgradeDescB: null,
+        sellRefund: 100,
       });
 
       expect(useGameStore.getState().selectedTowerData!.id).toBe('2');
@@ -44,7 +56,10 @@ describe('useGameStore - extended', () => {
     it('should clear selected tower data', () => {
       useGameStore.getState().projectSelectedTower({
         id: '1', name: 'Tower', tier: 1, damage: 10, attackSpeed: 1, range: 3,
-        special: null, upgradeCostA: null, upgradeCostB: null, sellRefund: 50,
+        special: null, upgradeCostA: null, upgradeCostAEssence: null,
+        upgradeCostB: null, upgradeCostBEssence: null,
+        upgradeNameA: null, upgradeNameB: null, upgradeDescA: null, upgradeDescB: null,
+        sellRefund: 50,
       });
       useGameStore.getState().clearSelectedTower();
       expect(useGameStore.getState().selectedTowerData).toBeNull();
@@ -104,7 +119,10 @@ describe('useGameStore - extended', () => {
       });
       useGameStore.getState().projectSelectedTower({
         id: '1', name: 'Tower', tier: 1, damage: 10, attackSpeed: 1, range: 3,
-        special: null, upgradeCostA: null, upgradeCostB: null, sellRefund: 50,
+        special: null, upgradeCostA: null, upgradeCostAEssence: null,
+        upgradeCostB: null, upgradeCostBEssence: null,
+        upgradeNameA: null, upgradeNameB: null, upgradeDescA: null, upgradeDescB: null,
+        sellRefund: 50,
       });
 
       useGameStore.getState().resetGameState();
