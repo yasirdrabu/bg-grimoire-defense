@@ -1,10 +1,13 @@
 import type { World } from '@grimoire/shared';
-import { TOWERS, TOWER_UPGRADES, getSellRefund } from '@grimoire/shared';
+import { TOWERS, TOWER_UPGRADES, getSellRefund, FIRST_FUSION_ESSENCE } from '@grimoire/shared';
 import { useGameStore } from '../../../stores/useGameStore';
 import { useUIStore } from '../../../stores/useUIStore';
+import { usePlayerStore } from '../../../stores/usePlayerStore';
 import { TowerDataComponent } from '../components/TowerData';
 import { AttackComponent } from '../components/Attack';
+import { PositionComponent } from '../components/Position';
 import { canUpgrade, applyUpgrade, getUpgradeCost } from '../../towers/TowerUpgrade';
+import { findFusionRecipe, executeFusion } from '../../towers/FusionEngine';
 
 export function inputSystem(world: World, _dt: number): void {
   const actions = useGameStore.getState().drainActions();
@@ -115,9 +118,55 @@ export function inputSystem(world: World, _dt: number): void {
         break;
       }
 
-      case 'FUSE_TOWERS':
-        // Will be handled in Phase 2
+      case 'FUSE_TOWERS': {
+        const { towerIdA, towerIdB } = action;
+        const entityA = Number(towerIdA);
+        const entityB = Number(towerIdB);
+
+        const dataA = world.getComponent(entityA, TowerDataComponent);
+        const dataB = world.getComponent(entityB, TowerDataComponent);
+        const posA = world.getComponent(entityA, PositionComponent);
+        const posB = world.getComponent(entityB, PositionComponent);
+
+        if (!dataA || !dataB || !posA || !posB) break;
+
+        // Both towers must be Tier 2+
+        if (dataA.tier < 2 || dataB.tier < 2) break;
+
+        // Validate orthogonal adjacency
+        const dx = Math.abs(posA.gridX - posB.gridX);
+        const dy = Math.abs(posA.gridY - posB.gridY);
+        const isAdjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+        if (!isAdjacent) break;
+
+        // Look up recipe
+        const recipe = findFusionRecipe(dataA.towerId, dataB.towerId);
+        if (!recipe) break;
+
+        // Check and deduct essence cost
+        const gameState = useGameStore.getState();
+        if (gameState.essence < recipe.essenceCost) break;
+        useGameStore.setState({ essence: gameState.essence - recipe.essenceCost });
+
+        // Check discovery BEFORE executing fusion (recipe.id won't change, but guard is cleaner here)
+        const playerState = usePlayerStore.getState();
+        const isNewDiscovery = !playerState.discoveredFusions.has(recipe.id);
+
+        // Execute fusion: destroys both towers, creates fusion entity at A's position
+        executeFusion(world, entityA, entityB, recipe);
+
+        // Award first-fusion essence bonus and record discovery
+        if (isNewDiscovery) {
+          playerState.discoverFusion(recipe.id);
+          const currentEssence = useGameStore.getState().essence;
+          useGameStore.setState({ essence: currentEssence + FIRST_FUSION_ESSENCE });
+        }
+
+        // Clear UI selection
+        useUIStore.getState().deselectTower();
+        useGameStore.getState().clearSelectedTower();
         break;
+      }
     }
   }
 }
