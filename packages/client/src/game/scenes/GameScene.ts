@@ -37,6 +37,7 @@ import { useUIStore } from '../../stores/useUIStore';
 
 // Tutorial
 import { TutorialManager } from '../tutorial/TutorialManager';
+import { findFusionRecipe } from '../towers/FusionEngine';
 
 // Pathfinding
 import PF from 'pathfinding';
@@ -447,12 +448,41 @@ export class GameScene extends Phaser.Scene {
 
     // Tick tutorial
     if (this.tutorialManager?.isActive()) {
-      const towerCount = this.world.query(TowerDataComponent).length;
+      const towerIds = this.world.query(TowerDataComponent, PositionComponent);
+      const towerCount = towerIds.length;
+
+      // Detect whether any two adjacent towers can be fused (for L3 tutorial)
+      let hasFusionTower = false;
+      if (towerCount >= 2) {
+        const posMap = new Map<string, string>();
+        for (const id of towerIds) {
+          const pos = this.world.getComponent(id, PositionComponent);
+          const data = this.world.getComponent(id, TowerDataComponent);
+          if (pos && data) {
+            posMap.set(`${pos.gridX},${pos.gridY}`, data.towerId);
+          }
+        }
+        outer: for (const id of towerIds) {
+          const pos = this.world.getComponent(id, PositionComponent);
+          const data = this.world.getComponent(id, TowerDataComponent);
+          if (!pos || !data) continue;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+            const neighbourType = posMap.get(`${pos.gridX + dx},${pos.gridY + dy}`);
+            if (neighbourType && findFusionRecipe(data.towerId, neighbourType)) {
+              hasFusionTower = true;
+              break outer;
+            }
+          }
+        }
+      }
+
       this.tutorialManager.tick(
         {
           towerCount,
           waveStarted: this.waveSystem.getState() !== 'pre_wave',
           goldAmount: state.gold,
+          currentWave: this.waveSystem.getCurrentWaveIndex(),
+          hasFusionTower,
         },
         dt,
       );
