@@ -36,6 +36,7 @@ import { canPlace, cloneGridWithBlock, createGrid } from '../towers/TowerPlaceme
 // Stores
 import { useGameStore } from '../../stores/useGameStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { usePlayerStore } from '../../stores/usePlayerStore';
 
 // Tutorial
 import { TutorialManager } from '../tutorial/TutorialManager';
@@ -43,6 +44,7 @@ import { findFusionRecipe } from '../towers/FusionEngine';
 
 // Pathfinding
 import PF from 'pathfinding';
+import { emitSceneChange } from '../utils/sceneEvents';
 
 export class GameScene extends Phaser.Scene {
   world!: GameWorld;
@@ -75,6 +77,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    emitSceneChange('GameScene');
     this.world = new GameWorld();
     this.gridData = createGrid(this.gridCols, this.gridRows);
 
@@ -105,8 +108,9 @@ export class GameScene extends Phaser.Scene {
     // Compute initial path
     this.computePath();
 
-    // Initialize game state
-    const levelDef = LEVELS['act1_level1']!;
+    // Initialize game state — read selected level from store
+    const selectedLevelId = useGameStore.getState().selectedLevelId;
+    const levelDef = LEVELS[selectedLevelId] ?? LEVELS['act1_level1']!;
     this.waveSystem = new WaveSystem(levelDef);
 
     // Wire tutorial for all tutorial levels
@@ -410,9 +414,11 @@ export class GameScene extends Phaser.Scene {
           useGameStore.setState({ gold: currentGold + interest });
           break;
         }
-        case 'LEVEL_COMPLETE':
+        case 'LEVEL_COMPLETE': {
           useGameStore.setState({ waveState: 'level_complete' });
+          this.handleLevelComplete();
           break;
+        }
       }
     }
 
@@ -425,7 +431,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Project next wave enemies for WavePreview UI
-    const levelDef = LEVELS['act1_level1']!;
+    const selectedLevelId = useGameStore.getState().selectedLevelId;
+    const levelDef = LEVELS[selectedLevelId] ?? LEVELS['act1_level1']!;
     const nextWaveIdx = this.waveSystem.getCurrentWaveIndex();
     const nextWave = levelDef.waves[nextWaveIdx];
     if (nextWave) {
@@ -495,6 +502,59 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.renderEntities();
+  }
+
+  private handleLevelComplete(): void {
+    const state = useGameStore.getState();
+    const selectedLevelId = state.selectedLevelId;
+    const levelDef = LEVELS[selectedLevelId] ?? LEVELS['act1_level1']!;
+
+    const baseScore = state.score;
+    const comboScore = 0;
+    const speedBonus = 0;
+    const stylePoints = 0;
+    const perfectWaveBonus = 0;
+    const nexusHealthBonus = Math.floor((state.nexusHP / state.maxNexusHP) * 500);
+    const totalScore = baseScore + comboScore + speedBonus + stylePoints + perfectWaveBonus + nexusHealthBonus;
+
+    let stars = 0;
+    if (state.nexusHP > 0) {
+      stars = 1;
+      if (totalScore >= 1000) stars = 2;
+      if (totalScore >= 3000) stars = 3;
+      if (totalScore >= 5000) stars = 4;
+    }
+
+    useGameStore.getState().setScoreBreakdown({
+      baseScore,
+      comboScore,
+      speedBonus,
+      stylePoints,
+      perfectWaveBonus,
+      nexusHealthBonus,
+      totalScore,
+      stars,
+      levelId: levelDef.id,
+      levelName: levelDef.name,
+    });
+
+    // Update player progress
+    const playerState = usePlayerStore.getState();
+    const existingProgress = playerState.progress.get(levelDef.id);
+    usePlayerStore.getState().updateProgress(levelDef.id, {
+      levelId: levelDef.id,
+      difficulty: state.selectedDifficulty,
+      bestScore: Math.max(totalScore, existingProgress?.bestScore ?? 0),
+      stars: Math.max(stars, existingProgress?.stars ?? 0),
+      bestCombo: Math.max(state.comboCount, existingProgress?.bestCombo ?? 0),
+      timesCompleted: (existingProgress?.timesCompleted ?? 0) + 1,
+    });
+
+    this.cameras.main.fadeOut(500, 0, 0, 0, (_camera: unknown, progress: number) => {
+      if (progress === 1) {
+        this.scene.start('ScoreBreakdownScene');
+      }
+    });
   }
 
   private spawnEnemy(enemyType: string): void {

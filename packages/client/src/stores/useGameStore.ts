@@ -1,6 +1,9 @@
 import { createStore } from 'zustand/vanilla';
 import { STARTING_GOLD } from '@grimoire/shared';
+import type { Difficulty } from '@grimoire/shared';
 import type { WaveState } from '../game/ecs/systems/WaveSystem';
+
+export type { Difficulty };
 
 export type GameAction =
   | { type: 'BUILD_TOWER'; towerType: string; gridX: number; gridY: number }
@@ -10,6 +13,19 @@ export type GameAction =
   | { type: 'SEND_WAVE_EARLY' }
   | { type: 'SET_SPEED'; speed: 1 | 2 | 3 }
   | { type: 'TOGGLE_PAUSE' };
+
+export interface ScoreBreakdownData {
+  baseScore: number;
+  comboScore: number;
+  speedBonus: number;
+  stylePoints: number;
+  perfectWaveBonus: number;
+  nexusHealthBonus: number;
+  totalScore: number;
+  stars: number; // 0-4
+  levelId: string;
+  levelName: string;
+}
 
 export interface GameState {
   // Projected state (written by ECS systems, read by Preact)
@@ -56,6 +72,15 @@ export interface GameState {
   // Send wave early flag (set by InputSystem, consumed by GameScene)
   sendWaveEarlyFlag: boolean;
 
+  // Score breakdown (set when level completes, consumed by ScoreBreakdown UI)
+  scoreBreakdown: ScoreBreakdownData | null;
+
+  // Level/difficulty selection (set in HubScene, read by GameScene)
+  selectedLevelId: string;
+  selectedDifficulty: Difficulty;
+  setSelectedLevel: (levelId: string) => void;
+  setSelectedDifficulty: (d: Difficulty) => void;
+
   // Action queue (written by Preact, drained by InputSystem)
   pendingActions: GameAction[];
   dispatch: (action: GameAction) => void;
@@ -64,6 +89,9 @@ export interface GameState {
   // Actions to project selected tower data from ECS
   projectSelectedTower: (data: GameState['selectedTowerData']) => void;
   clearSelectedTower: () => void;
+
+  // Score breakdown setter
+  setScoreBreakdown: (data: GameState['scoreBreakdown']) => void;
 
   // Lifecycle
   resetGameState: () => void;
@@ -87,11 +115,22 @@ const DEFAULT_STATE = {
   selectedTowerData: null as GameState['selectedTowerData'],
   countdownRemainingMs: 0,
   sendWaveEarlyFlag: false,
+  scoreBreakdown: null as GameState['scoreBreakdown'],
+  selectedLevelId: 'act1_level1',
+  selectedDifficulty: 'normal' as Difficulty,
   pendingActions: [] as GameAction[],
 };
 
 export const useGameStore = createStore<GameState>((set, get) => ({
   ...DEFAULT_STATE,
+
+  setSelectedLevel: (levelId: string) => {
+    set({ selectedLevelId: levelId });
+  },
+
+  setSelectedDifficulty: (d: Difficulty) => {
+    set({ selectedDifficulty: d });
+  },
 
   dispatch: (action: GameAction) => {
     set((state) => ({
@@ -114,5 +153,9 @@ export const useGameStore = createStore<GameState>((set, get) => ({
   },
   clearSelectedTower: () => {
     set({ selectedTowerData: null });
+  },
+
+  setScoreBreakdown: (data) => {
+    set({ scoreBreakdown: data });
   },
 }));
