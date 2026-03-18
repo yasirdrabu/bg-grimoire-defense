@@ -8,3 +8,4 @@ export { RenderableComponent, type RenderableData } from './Renderable';
 export { ProjectileComponent, type ProjectileData } from './Projectile';
 export { StatusEffectsComponent, type StatusEffectsData, type ActiveStatusEffect } from './StatusEffects';
 export { TowerDisabledComponent, type TowerDisabledData } from './TowerDisabled';
+export { BossPhaseComponent, type BossPhaseData } from './BossPhase';

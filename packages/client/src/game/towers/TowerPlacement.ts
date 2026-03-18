@@ -3,6 +3,8 @@
  * Pure logic, no Phaser dependency.
  */
 
+import { isOnFire } from '../ecs/systems/FireCellSystem';
+
 /** Check if a cell is available for building (not occupied, within bounds) */
 export function canPlace(
   grid: number[][],
@@ -12,7 +14,9 @@ export function canPlace(
   if (gridY < 0 || gridY >= grid.length) return false;
   const row = grid[gridY];
   if (!row || gridX < 0 || gridX >= row.length) return false;
-  return row[gridX] === 0;
+  if (row[gridX] !== 0) return false;
+  if (isOnFire(gridX, gridY)) return false;
+  return true;
 }
 
 /** Clone grid and mark a cell as blocked */

@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { canPlace, cloneGridWithBlock, createGrid } from '../TowerPlacement';
+import { addFireCell, resetFireCells } from '../../ecs/systems/FireCellSystem';
 
 describe('TowerPlacement', () => {
+  beforeEach(() => {
+    resetFireCells();
+  });
+
   it('should allow placement on empty cell', () => {
     const grid = createGrid(10, 10);
     expect(canPlace(grid, 5, 5)).toBe(true);
@@ -26,5 +31,25 @@ describe('TowerPlacement', () => {
     const clone = cloneGridWithBlock(grid, 2, 2);
     expect(clone[2]![2]).toBe(1);
     expect(grid[2]![2]).toBe(0); // original unchanged
+  });
+
+  it('should reject placement on a fire cell', () => {
+    const grid = createGrid(10, 10);
+    addFireCell(3, 4);
+    expect(canPlace(grid, 3, 4)).toBe(false);
+  });
+
+  it('should allow placement adjacent to a fire cell', () => {
+    const grid = createGrid(10, 10);
+    addFireCell(3, 4);
+    expect(canPlace(grid, 4, 4)).toBe(true);
+  });
+
+  it('should allow placement on a cell after its fire expires', () => {
+    const grid = createGrid(10, 10);
+    addFireCell(3, 4);
+    expect(canPlace(grid, 3, 4)).toBe(false);
+    resetFireCells();
+    expect(canPlace(grid, 3, 4)).toBe(true);
   });
 });

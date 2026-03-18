@@ -11,7 +11,8 @@ export type EnemyAbilityType =
   | 'teleport'
   | 'resurrect'
   | 'ice_wall'
-  | 'corruption';
+  | 'corruption'
+  | 'boss';
 
 export interface EnemyDefinition {
   readonly id: string;

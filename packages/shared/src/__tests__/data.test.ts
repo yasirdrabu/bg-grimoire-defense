@@ -55,9 +55,9 @@ describe('Tower data', () => {
 });
 
 describe('Enemy data', () => {
-  it('should have all 5 Middle-earth enemies', () => {
+  it('should have all 6 Middle-earth enemies (including Balrog boss)', () => {
     const meEnemies = Object.values(ENEMIES).filter((e) => e.universe === 'middle_earth');
-    expect(meEnemies).toHaveLength(5);
+    expect(meEnemies).toHaveLength(6);
   });
 
   it('should have Orc Grunt as tutorial enemy', () => {

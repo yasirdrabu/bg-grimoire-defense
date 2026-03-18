@@ -1,0 +1,58 @@
+import type { FusionRecipe } from '../types/fusion';
+
+export const FUSIONS: Record<string, FusionRecipe> = {
+  explosive_arrow: {
+    id: 'explosive_arrow',
+    name: 'Explosive Arrow Tower',
+    inputs: ['elven_archer_spire', 'dwarven_cannon'],
+    universe: 'middle_earth',
+    tier: 'intra',
+    essenceCost: 25,
+    stats: {
+      range: 4,
+      attackSpeed: 1.2,
+      damage: 35,
+      damageType: 'fire',
+      canTargetAir: true,
+      splashRadius: 1.0,
+    },
+    mechanic: 'Single-target arrows detonate on impact for splash damage',
+    hint: 'When elven precision meets dwarven firepower...',
+  },
+  enchanted_ballista: {
+    id: 'enchanted_ballista',
+    name: 'Enchanted Ballista',
+    inputs: ['gondorian_ballista', 'istari_crystal'],
+    universe: 'middle_earth',
+    tier: 'intra',
+    essenceCost: 25,
+    stats: {
+      range: 4,
+      attackSpeed: 2.0,
+      damage: 60,
+      damageType: 'arcane',
+      canTargetAir: false,
+      pierceCount: 3,
+    },
+    mechanic: 'Piercing spell bolt passes through all enemies in a line dealing full damage',
+    hint: 'Ancient siege craft enhanced by wizard crystal...',
+  },
+  enchanted_grove: {
+    id: 'enchanted_grove',
+    name: 'Enchanted Grove',
+    inputs: ['ent_watchtower', 'istari_crystal'],
+    universe: 'middle_earth',
+    tier: 'intra',
+    essenceCost: 25,
+    stats: {
+      range: 3,
+      attackSpeed: 1.5,
+      damage: 20,
+      damageType: 'arcane',
+      canTargetAir: false,
+      statusEffect: { type: 'slow', duration: 3000, magnitude: 0.5 },
+    },
+    mechanic: 'Creates a persistent aura that slows and damages all enemies within range',
+    hint: 'Where old growth meets arcane understanding...',
+  },
+};

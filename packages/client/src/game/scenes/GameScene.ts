@@ -16,6 +16,8 @@ import { HealthComponent } from '../ecs/components/Health';
 // Systems
 import { inputSystem } from '../ecs/systems/InputSystem';
 import { enemyAISystem } from '../enemies/EnemyAI';
+import { bossAISystem } from '../enemies/BossAI';
+import { tickFireCells, damageFireTowers } from '../ecs/systems/FireCellSystem';
 import { movementSystem } from '../ecs/systems/MovementSystem';
 import { targetingSystem } from '../ecs/systems/TargetingSystem';
 import { attackSystem } from '../ecs/systems/AttackSystem';
@@ -107,9 +109,10 @@ export class GameScene extends Phaser.Scene {
     const levelDef = LEVELS['act1_level1']!;
     this.waveSystem = new WaveSystem(levelDef);
 
-    // Wire tutorial for act1_level1
-    if (levelDef.id === 'act1_level1') {
-      this.tutorialManager = new TutorialManager('act1_level1');
+    // Wire tutorial for all tutorial levels
+    const tutorialLevels = ['act1_level1', 'act1_level2', 'act1_level3'];
+    if (tutorialLevels.includes(levelDef.id)) {
+      this.tutorialManager = new TutorialManager(levelDef.id);
     }
     const firstWave = levelDef.waves[0];
     useGameStore.setState({
@@ -437,6 +440,9 @@ export class GameScene extends Phaser.Scene {
     inputSystem(this.world, dt);
     // WaveSystem ticked above (event-based, not an ECS system function)
     enemyAISystem(this.world, dt);
+    bossAISystem(this.world, dt);
+    tickFireCells(dt);
+    damageFireTowers(this.world, dt);
     movementSystem(this.world, dt);
     targetingSystem(this.world, dt);
     attackSystem(this.world, dt);
