@@ -38,6 +38,10 @@ import { useGameStore } from '../../stores/useGameStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 
+// API
+import { api } from '../../api/client';
+import { OfflineQueue } from '../../api/offlineQueue';
+
 // Tutorial
 import { TutorialManager } from '../tutorial/TutorialManager';
 import { findFusionRecipe } from '../towers/FusionEngine';
@@ -71,6 +75,15 @@ export class GameScene extends Phaser.Scene {
   // Ghost preview
   private ghostSprite: Phaser.GameObjects.Sprite | null = null;
   private rangeCircle: Phaser.GameObjects.Graphics | null = null;
+
+  // Session tracking for server score submission
+  private sessionId: string | null = null;
+  private sessionStartedAt = 0;
+  private sessionTowersBuilt = 0;
+  private sessionTowersFused = 0;
+  private sessionEnemiesKilled = 0;
+  private sessionGoldEarned = 0;
+  private sessionEssenceEarned = 0;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -130,6 +143,24 @@ export class GameScene extends Phaser.Scene {
         ? firstWave.enemies.map(g => ({ enemyType: g.type, count: g.count }))
         : [],
     });
+
+    // Reset per-session stats
+    this.sessionId = null;
+    this.sessionStartedAt = Date.now();
+    this.sessionTowersBuilt = 0;
+    this.sessionTowersFused = 0;
+    this.sessionEnemiesKilled = 0;
+    this.sessionGoldEarned = 0;
+    this.sessionEssenceEarned = 0;
+
+    // Start server-side session if logged in
+    const playerState = usePlayerStore.getState();
+    if (playerState.isLoggedIn) {
+      api
+        .startSession(levelDef.id, useGameStore.getState().selectedDifficulty)
+        .then((res) => { this.sessionId = res.session_id; })
+        .catch(() => { /* Session start failed — submission will be skipped */ });
+    }
 
     // Input: click to place towers
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -550,10 +581,57 @@ export class GameScene extends Phaser.Scene {
       timesCompleted: (existingProgress?.timesCompleted ?? 0) + 1,
     });
 
+    // Submit score to server (fire-and-forget; queue offline if network fails)
+    this.submitScore(state, totalScore, baseScore, comboScore, speedBonus, stylePoints, perfectWaveBonus, nexusHealthBonus);
+
     this.cameras.main.fadeOut(500, 0, 0, 0, (_camera: unknown, progress: number) => {
       if (progress === 1) {
         this.scene.start('ScoreBreakdownScene');
       }
+    });
+  }
+
+  private submitScore(
+    state: ReturnType<typeof useGameStore.getState>,
+    _totalScore: number,
+    baseScore: number,
+    comboScore: number,
+    speedBonus: number,
+    stylePoints: number,
+    perfectWaveBonus: number,
+    nexusHealthBonus: number,
+  ): void {
+    if (!usePlayerStore.getState().isLoggedIn) return;
+    if (!this.sessionId) return;
+
+    const sessionId = this.sessionId;
+    const durationMs = Date.now() - this.sessionStartedAt;
+
+    const scoreBreakdown = {
+      base_score: baseScore,
+      combo_score: comboScore,
+      speed_score: speedBonus,
+      style_score: stylePoints,
+      perfect_wave_bonus: perfectWaveBonus,
+      nexus_health_bonus: nexusHealthBonus,
+    };
+
+    const stats = {
+      waves_completed: state.wave,
+      total_waves: state.totalWaves,
+      towers_built: this.sessionTowersBuilt,
+      towers_fused: this.sessionTowersFused,
+      enemies_killed: this.sessionEnemiesKilled,
+      gold_earned: this.sessionGoldEarned,
+      essence_earned: this.sessionEssenceEarned,
+      max_combo: state.comboCount,
+      nexus_hp_remaining: state.nexusHP,
+      duration_ms: durationMs,
+    };
+
+    api.endSession(sessionId, scoreBreakdown, stats).catch(() => {
+      // Network failure — queue for later retry
+      OfflineQueue.enqueue({ sessionId, scoreBreakdown, stats });
     });
   }
 
