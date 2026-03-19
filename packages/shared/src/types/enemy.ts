@@ -12,7 +12,11 @@ export type EnemyAbilityType =
   | 'resurrect'
   | 'ice_wall'
   | 'corruption'
-  | 'boss';
+  | 'boss'
+  | 'shield'
+  | 'drain_attack_speed'
+  | 'spawn_on_death'
+  | 'regenerate';
 
 export interface EnemyDefinition {
   readonly id: string;
