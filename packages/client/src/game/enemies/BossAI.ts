@@ -46,6 +46,7 @@ import { AttackComponent } from '../ecs/components/Attack';
 import { TowerDataComponent } from '../ecs/components/TowerData';
 import { TowerDisabledComponent } from '../ecs/components/TowerDisabled';
 import { addFireCell } from '../ecs/systems/FireCellSystem';
+import { addIceCell } from '../ecs/systems/IceCellSystem';
 
 // ─── Balrog constants ────────────────────────────────────────────────────────
 
@@ -111,6 +112,49 @@ const HORCRUX_HP = 100;
 /** Cooldown (ms) for Voldemort's tower instant-kill in Phase 3 */
 const TOWER_KILL_COOLDOWN_MS = 10_000;
 
+// ─── White Walker General constants ──────────────────────────────────────────
+
+/** HP fraction below which the White Walker General transitions to ICE_WALL phase */
+const WWG_ICE_WALL_THRESHOLD = 0.5;
+
+/** Range (tiles) within which dying enemies are resurrected */
+const WWG_RESURRECT_RANGE = 2;
+
+/** HP fraction at which resurrected undead are created */
+const WWG_RESURRECT_HP_FRACTION = 0.5;
+
+/** Range (tiles) within which towers have attack speed slowed */
+const WWG_SLOW_AURA_RANGE = 2;
+
+/** Attack speed multiplier for towers in the slow aura (25% slower) */
+const WWG_SLOW_MULTIPLIER = 1.25;
+
+/** Duration (ms) for each ice wall freeze */
+const WWG_ICE_WALL_DURATION_MS = 10_000;
+
+/** How often (ms) the White Walker General creates a new ice wall row */
+const WWG_ICE_WALL_COOLDOWN_MS = 12_000;
+
+// ─── Night King constants ─────────────────────────────────────────────────────
+
+/** HP fraction below which the Night King mounts his dragon */
+const NK_DRAGON_THRESHOLD = 0.5;
+
+/** HP fraction below which the Night King enters LAST_STAND */
+const NK_LAST_STAND_THRESHOLD = 0.15;
+
+/** Duration (ms) towers are corrupted (disabled) in Phase 1 */
+const NK_CORRUPTION_DISABLE_MS = 8_000;
+
+/** Range (tiles) within which towers are corrupted */
+const NK_CORRUPTION_RANGE = 2;
+
+/** How often (ms) a new corruption pulse hits towers in range */
+const NK_CORRUPTION_COOLDOWN_MS = 15_000;
+
+/** How often (ms) the Night King spawns wight minions in LAST_STAND */
+const NK_LAST_STAND_SPAWN_MS = 5_000;
+
 /** Tracks which bosses we've already set up phase data for */
 const initialisedBosses = new Set<number>();
 
@@ -169,6 +213,25 @@ export function bossAISystem(world: World, deltaMs: number): void {
         break;
       case 'DESPERATE':
         processVoldemortDesperate(world, bossId, phase, deltaMs);
+        break;
+
+      // ── White Walker General ──
+      case 'RESURRECT':
+        processWWGResurrect(world, bossId, health, phase, deltaMs);
+        break;
+      case 'ICE_WALL':
+        processWWGIceWall(world, bossId, phase, deltaMs);
+        break;
+
+      // ── Night King ──
+      case 'CORRUPTION':
+        processNKCorruption(world, bossId, health, phase, deltaMs);
+        break;
+      case 'DRAGON':
+        processNKDragon(world, bossId, health, phase, enemyData, deltaMs);
+        break;
+      case 'LAST_STAND':
+        processNKLastStand(world, bossId, phase, deltaMs);
         break;
 
       case 'DEAD':
@@ -598,10 +661,244 @@ function instantKillRandomTower(world: World): void {
   }
 }
 
+// ─── White Walker General implementation ─────────────────────────────────────
+
+/** Tracks which WWG entities had their slow aura applied last frame */
+const wwgSlowedTowersLastFrame = new Map<number, number>();
+
+/**
+ * RESURRECT phase: walks the path, slows nearby towers' attack speed by 25%.
+ * Transitions to ICE_WALL at 50% HP.
+ */
+function processWWGResurrect(
+  world: World,
+  bossId: number,
+  health: { current: number; max: number },
+  phase: import('../ecs/components/BossPhase').BossPhaseData,
+  _deltaMs: number,
+): void {
+  // Phase transition check
+  if (health.current / health.max <= WWG_ICE_WALL_THRESHOLD) {
+    // Restore any slowed towers before transition
+    for (const [towerId, originalSpeed] of wwgSlowedTowersLastFrame) {
+      const attack = world.getComponent(towerId, AttackComponent);
+      if (attack) attack.attackSpeed = originalSpeed;
+    }
+    wwgSlowedTowersLastFrame.clear();
+
+    phase.current = 'ICE_WALL';
+    phase.timer = WWG_ICE_WALL_COOLDOWN_MS;
+    phase.phaseData = { nextRow: 0 };
+    return;
+  }
+
+  // Restore towers slowed last frame
+  for (const [towerId, originalSpeed] of wwgSlowedTowersLastFrame) {
+    const attack = world.getComponent(towerId, AttackComponent);
+    if (attack) attack.attackSpeed = originalSpeed;
+  }
+  wwgSlowedTowersLastFrame.clear();
+
+  // Apply slow aura to nearby towers
+  const bossPos = world.getComponent(bossId, PositionComponent);
+  if (!bossPos) return;
+
+  const towers = world.query(PositionComponent, AttackComponent, TowerDataComponent);
+  for (const towerId of towers) {
+    const towerPos = world.getComponent(towerId, PositionComponent)!;
+    const dist = Math.sqrt(
+      (bossPos.gridX - towerPos.gridX) ** 2 +
+      (bossPos.gridY - towerPos.gridY) ** 2,
+    );
+    if (dist <= WWG_SLOW_AURA_RANGE) {
+      const attack = world.getComponent(towerId, AttackComponent)!;
+      if (!wwgSlowedTowersLastFrame.has(towerId)) {
+        wwgSlowedTowersLastFrame.set(towerId, attack.attackSpeed);
+        attack.attackSpeed = attack.attackSpeed * WWG_SLOW_MULTIPLIER;
+      }
+    }
+  }
+}
+
+/**
+ * Returns the resurrect range and HP fraction for external use (e.g. DeathSystem).
+ * When an enemy dies within WWG_RESURRECT_RANGE of the White Walker General,
+ * DeathSystem should respawn it at WWG_RESURRECT_HP_FRACTION of its max HP.
+ */
+export function getWWGResurrectParams(): { range: number; hpFraction: number } {
+  return { range: WWG_RESURRECT_RANGE, hpFraction: WWG_RESURRECT_HP_FRACTION };
+}
+
+/**
+ * ICE_WALL phase: periodically freezes a row of grid cells for ICE_WALL_DURATION_MS,
+ * forcing all enemies to repath around the blocked row.
+ */
+function processWWGIceWall(
+  world: World,
+  bossId: number,
+  phase: import('../ecs/components/BossPhase').BossPhaseData,
+  deltaMs: number,
+): void {
+  phase.timer -= deltaMs;
+  if (phase.timer > 0) return;
+
+  phase.timer = WWG_ICE_WALL_COOLDOWN_MS;
+
+  const bossPos = world.getComponent(bossId, PositionComponent);
+  if (!bossPos) return;
+
+  // Freeze the row the boss is currently on
+  const frozenRow = Math.round(bossPos.gridY);
+  const gridCols = (phase.phaseData['gridCols'] as number | undefined) ?? 24;
+
+  for (let col = 0; col < gridCols; col++) {
+    addIceCell(col, frozenRow, WWG_ICE_WALL_DURATION_MS);
+  }
+
+  // Signal repath via phaseData — GameScene reads this and triggers PathManager repath
+  phase.phaseData = {
+    ...phase.phaseData,
+    repathRequest: true,
+    frozenRow,
+  };
+}
+
+// ─── Night King implementation ────────────────────────────────────────────────
+
+/** Tracks which Night King entities have already entered DRAGON phase */
+const nkDragonTransitioned = new Set<number>();
+
+/** Tracks which Night King entities have already entered LAST_STAND phase */
+const nkLastStandEntered = new Set<number>();
+
+/**
+ * CORRUPTION phase: periodically corrupts (disables) towers within range.
+ * Transitions to DRAGON at 50% HP.
+ */
+function processNKCorruption(
+  world: World,
+  bossId: number,
+  health: { current: number; max: number },
+  phase: import('../ecs/components/BossPhase').BossPhaseData,
+  deltaMs: number,
+): void {
+  // Phase transition check
+  if (health.current / health.max <= NK_DRAGON_THRESHOLD && !nkDragonTransitioned.has(bossId)) {
+    nkDragonTransitioned.add(bossId);
+    phase.current = 'DRAGON';
+    phase.timer = 0;
+    phase.phaseData = { wightSpawnTimer: 3000 };
+    return;
+  }
+
+  phase.timer -= deltaMs;
+  if (phase.timer > 0) return;
+
+  phase.timer = NK_CORRUPTION_COOLDOWN_MS;
+
+  // Corrupt all towers within range
+  const bossPos = world.getComponent(bossId, PositionComponent);
+  if (!bossPos) return;
+
+  const towers = world.query(PositionComponent, AttackComponent, TowerDataComponent);
+  for (const towerId of towers) {
+    const towerPos = world.getComponent(towerId, PositionComponent)!;
+    const dist = Math.sqrt(
+      (bossPos.gridX - towerPos.gridX) ** 2 +
+      (bossPos.gridY - towerPos.gridY) ** 2,
+    );
+    if (dist <= NK_CORRUPTION_RANGE) {
+      const existing = world.getComponent(towerId, TowerDisabledComponent);
+      if (existing) {
+        existing.remainingMs = Math.max(existing.remainingMs, NK_CORRUPTION_DISABLE_MS);
+      } else {
+        world.addComponent(towerId, TowerDisabledComponent, { remainingMs: NK_CORRUPTION_DISABLE_MS });
+      }
+    }
+  }
+}
+
+/**
+ * DRAGON phase: Night King mounts dragon (becomes flying), spawns wight minions.
+ * Transitions to LAST_STAND at 15% HP.
+ */
+function processNKDragon(
+  world: World,
+  bossId: number,
+  health: { current: number; max: number },
+  phase: import('../ecs/components/BossPhase').BossPhaseData,
+  enemyData: import('../ecs/components/EnemyData').EnemyDataData,
+  deltaMs: number,
+): void {
+  // Mark as flying on first entry
+  if (!enemyData.isFlying) {
+    enemyData.isFlying = true;
+  }
+
+  // Phase transition check
+  if (health.current / health.max <= NK_LAST_STAND_THRESHOLD && !nkLastStandEntered.has(bossId)) {
+    nkLastStandEntered.add(bossId);
+    enemyData.isFlying = false;
+
+    // Stop movement — boss anchors at current position (near nexus)
+    const pos = world.getComponent(bossId, PositionComponent);
+    const movement = world.getComponent(bossId, MovementComponent);
+    if (movement && pos) {
+      movement.path = [[Math.round(pos.gridX), Math.round(pos.gridY)]];
+      movement.pathIndex = 0;
+    }
+
+    phase.current = 'LAST_STAND';
+    phase.timer = NK_LAST_STAND_SPAWN_MS;
+    phase.phaseData = { wightWave: 0 };
+    return;
+  }
+
+  // Tick wight spawn timer
+  const wightSpawnTimer = ((phase.phaseData['wightSpawnTimer'] as number | undefined) ?? 3000) - deltaMs;
+  if (wightSpawnTimer <= 0) {
+    // Signal wight spawn — GameScene reads phaseData['spawnWights'] to create entities
+    phase.phaseData = {
+      ...phase.phaseData,
+      wightSpawnTimer: 3000,
+      spawnWights: (phase.phaseData['spawnWights'] as number | undefined ?? 0) + 1,
+    };
+  } else {
+    phase.phaseData = { ...phase.phaseData, wightSpawnTimer };
+  }
+}
+
+/**
+ * LAST_STAND phase: Night King is stationary at nexus, spawning wight waves every 5s.
+ * This is a DPS race — defeat the Night King before wights overwhelm the nexus.
+ */
+function processNKLastStand(
+  _world: World,
+  _bossId: number,
+  phase: import('../ecs/components/BossPhase').BossPhaseData,
+  deltaMs: number,
+): void {
+  phase.timer -= deltaMs;
+  if (phase.timer > 0) return;
+
+  phase.timer = NK_LAST_STAND_SPAWN_MS;
+
+  // Signal GameScene to spawn a wight wave
+  const wightWave = ((phase.phaseData['wightWave'] as number | undefined) ?? 0) + 1;
+  phase.phaseData = {
+    ...phase.phaseData,
+    wightWave,
+    spawnWightWave: wightWave,
+  };
+}
+
 /** Exported for testing: clears module-level tracking state */
 export function _resetBossAIState(): void {
   initialisedBosses.clear();
   horcruxSpawnedByBoss.clear();
+  wwgSlowedTowersLastFrame.clear();
+  nkDragonTransitioned.clear();
+  nkLastStandEntered.clear();
 }
 
 /** Exported constants for tests */
@@ -614,4 +911,10 @@ export {
   // Voldemort
   VOLDEMORT_HORCRUX_THRESHOLD, VOLDEMORT_DESPERATE_THRESHOLD, VOLDEMORT_TELEPORT_MS,
   HORCRUX_COUNT, HORCRUX_HP, TOWER_KILL_COOLDOWN_MS,
+  // White Walker General
+  WWG_ICE_WALL_THRESHOLD, WWG_RESURRECT_RANGE, WWG_RESURRECT_HP_FRACTION,
+  WWG_SLOW_AURA_RANGE, WWG_SLOW_MULTIPLIER, WWG_ICE_WALL_DURATION_MS, WWG_ICE_WALL_COOLDOWN_MS,
+  // Night King
+  NK_DRAGON_THRESHOLD, NK_LAST_STAND_THRESHOLD, NK_CORRUPTION_DISABLE_MS,
+  NK_CORRUPTION_RANGE, NK_CORRUPTION_COOLDOWN_MS, NK_LAST_STAND_SPAWN_MS,
 };

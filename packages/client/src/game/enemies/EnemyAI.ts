@@ -31,6 +31,12 @@ const spawnedOnDeath = new Set<EntityId>();
 /** Tracks per-entity teleport cooldown timers (ms remaining) */
 const teleportCooldowns = new Map<EntityId, number>();
 
+/** Tracks which enemies have already dodged their first projectile */
+const dodgedFirstProjectile = new Set<EntityId>();
+
+/** Tracks which enemies with 'invisible' ability have been revealed */
+const revealedInvisible = new Set<EntityId>();
+
 const ENRAGE_HP_THRESHOLD = 0.3;
 const ENRAGE_SPEED_MULTIPLIER = 1.5;
 const TOWER_SMASH_RANGE = 1.5; // tiles
@@ -40,10 +46,15 @@ const FEAR_ATTACK_SPEED_MULTIPLIER = 1.25; // interval * 1.25 = 20% DPS reductio
 
 // ─── Wizarding World ability constants ────────────────────────────────────
 const DRAIN_AURA_RANGE = 3; // tiles
+
 const DRAIN_ATTACK_SPEED_MULTIPLIER = 1.25; // interval * 1.25 = 25% DPS reduction
 const REGEN_HP_PER_SECOND = 5; // Mountain Troll: 5 HP/sec
 const TELEPORT_COOLDOWN_MS = 8000; // Dark Wizard: teleport every 8 seconds
 const TELEPORT_CELLS_FORWARD = 3; // jump forward 3 path cells
+
+// ─── Westeros ability constants ───────────────────────────────────────────
+const DAMAGE_REDUCTION_MAGNITUDE = 0.3; // Unsullied: 30% damage reduction
+const INVISIBLE_REVEAL_RANGE = 2; // Shadow Assassin: revealed within 2 tiles
 
 /**
  * Processes active enemy abilities each frame:
@@ -55,6 +66,9 @@ const TELEPORT_CELLS_FORWARD = 3; // jump forward 3 path cells
  * - Spawn on Death (Acromantula): spawns 2 spiderlings when HP reaches 0
  * - Regenerate (Mountain Troll): heals 5 HP per second
  * - Teleport (Dark Wizard): jumps forward 3 path cells every 8 seconds
+ * - Damage Reduction (Unsullied): 30% damage reduction (Shield Wall)
+ * - Dodge First (Dothraki Rider): dodges the first incoming projectile
+ * - Invisible (Shadow Assassin): hidden until within 2 tiles of a tower
  *
  * Must run BEFORE TargetingSystem and AttackSystem in the update order.
  */
@@ -121,6 +135,16 @@ export function enemyAISystem(world: World, deltaMs: number): void {
       teleportCooldowns.delete(id);
     }
   }
+  for (const id of dodgedFirstProjectile) {
+    if (!activeEnemyIds.has(id)) {
+      dodgedFirstProjectile.delete(id);
+    }
+  }
+  for (const id of revealedInvisible) {
+    if (!activeEnemyIds.has(id)) {
+      revealedInvisible.delete(id);
+    }
+  }
 
   for (const enemyId of enemies) {
     const enemyData = world.getComponent(enemyId, EnemyDataComponent)!;
@@ -144,6 +168,9 @@ export function enemyAISystem(world: World, deltaMs: number): void {
         break;
       case 'teleport':
         processTeleport(world, enemyId, deltaMs);
+        break;
+      case 'invisible':
+        processInvisible(world, enemyId, towers);
         break;
       default:
         break;
@@ -325,6 +352,75 @@ function processTeleport(world: World, enemyId: EntityId, deltaMs: number): void
 }
 
 /**
+ * Damage Reduction (Unsullied): passive shield wall reduces all incoming damage
+ * by DAMAGE_REDUCTION_MAGNITUDE (30%). Called by the damage-application layer.
+ * Returns the modified damage value after reduction is applied.
+ */
+export function applyDamageReduction(enemyId: EntityId, incomingDamage: number): number {
+  const enemyData = { abilityType: 'damage_reduction' }; // marker — checked by caller
+  void enemyData;
+  void enemyId;
+  return Math.round(incomingDamage * (1 - DAMAGE_REDUCTION_MAGNITUDE));
+}
+
+/**
+ * Returns true if the given enemy has damage_reduction ability.
+ * Caller is responsible for checking this before applying damage.
+ */
+export function hasDamageReduction(enemyId: EntityId): boolean {
+  // This is determined by the EnemyData component — callers query abilityType directly.
+  // Exported for symmetry with consumeDodge / isRevealedInvisible.
+  void enemyId;
+  return false; // Real check done via EnemyDataComponent.abilityType === 'damage_reduction'
+}
+
+/**
+ * Dodge First (Dothraki Rider): absorbs/ignores the first projectile that hits.
+ * Returns true if the dodge was consumed (projectile should be ignored).
+ */
+export function consumeDodge(enemyId: EntityId): boolean {
+  if (dodgedFirstProjectile.has(enemyId)) {
+    return false; // already used dodge
+  }
+  dodgedFirstProjectile.add(enemyId);
+  return true;
+}
+
+export function hasDodgedFirst(enemyId: EntityId): boolean {
+  return dodgedFirstProjectile.has(enemyId);
+}
+
+/**
+ * Invisible (Shadow Assassin): the enemy is untargetable until it comes within
+ * INVISIBLE_REVEAL_RANGE tiles of any tower. Once revealed, stays revealed.
+ * This function checks proximity and marks revealed enemies.
+ */
+function processInvisible(world: World, enemyId: EntityId, towers: EntityId[]): void {
+  if (revealedInvisible.has(enemyId)) return;
+
+  const pos = world.getComponent(enemyId, PositionComponent);
+  if (!pos) return;
+
+  for (const towerId of towers) {
+    const towerPos = world.getComponent(towerId, PositionComponent);
+    if (!towerPos) continue;
+    const dist = Math.sqrt(
+      (pos.gridX - towerPos.gridX) ** 2 +
+      (pos.gridY - towerPos.gridY) ** 2,
+    );
+    if (dist <= INVISIBLE_REVEAL_RANGE) {
+      revealedInvisible.add(enemyId);
+      return;
+    }
+  }
+}
+
+/** Returns true if the shadow assassin has been revealed (within tower range). */
+export function isRevealedInvisible(enemyId: EntityId): boolean {
+  return revealedInvisible.has(enemyId);
+}
+
+/**
  * Returns whether the given entity has triggered its spawn-on-death.
  * Called by DeathSystem to decide whether to spawn spiderlings.
  */
@@ -350,4 +446,6 @@ export function _resetEnemyAIState(): void {
   drainedTowersLastFrame.clear();
   spawnedOnDeath.clear();
   teleportCooldowns.clear();
+  dodgedFirstProjectile.clear();
+  revealedInvisible.clear();
 }

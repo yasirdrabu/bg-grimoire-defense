@@ -16,7 +16,10 @@ export type EnemyAbilityType =
   | 'shield'
   | 'drain_attack_speed'
   | 'spawn_on_death'
-  | 'regenerate';
+  | 'regenerate'
+  | 'damage_reduction'
+  | 'dodge_first'
+  | 'invisible';
 
 export interface EnemyDefinition {
   readonly id: string;
