@@ -11,8 +11,9 @@ describe('TowerPanel', () => {
     useUIStore.setState({ inputMode: 'idle', buildTowerType: null });
   });
 
-  it('renders all 5 tower buttons', () => {
+  it('renders all 5 Middle-earth tower buttons', () => {
     render(<TowerPanel />);
+    // TowerPanel filters to middle_earth universe; cost labels are unique in that set
     expect(screen.getByText('100g')).toBeTruthy();
     expect(screen.getByText('200g')).toBeTruthy();
     expect(screen.getByText('300g')).toBeTruthy();

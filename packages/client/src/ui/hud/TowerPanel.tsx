@@ -3,7 +3,12 @@ import { useStore } from '../hooks/useStore';
 import { useGameStore } from '../../stores/useGameStore';
 import { useUIStore } from '../../stores/useUIStore';
 
-const TOWER_KEYS = Object.keys(TOWERS);
+// Filter to only show towers for the current act's universe.
+// Act 1 = middle_earth, Act 2 = wizarding, Act 3 = westeros.
+// For now we show all unlocked universes up to the current act (Act 1 default).
+const TOWER_KEYS = Object.keys(TOWERS).filter(
+  (k) => TOWERS[k]!.universe === 'middle_earth',
+);
 
 const TOWER_COLORS: Record<string, string> = {
   elven_archer_spire: '#4ade80',
