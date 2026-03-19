@@ -206,19 +206,18 @@ export class HubScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(label);
 
-    // Interactive hit area for unlocked nodes
+    // Interactive hit area for unlocked nodes — placed at scene level (not in container)
+    // because Phaser container children don't translate interactive hit areas correctly
     if (unlocked) {
-      const hitArea = this.add.graphics();
-      hitArea.fillStyle(0xffffff, 0.001);
-      hitArea.fillCircle(0, 0, radius);
-      hitArea.setInteractive(
-        new Phaser.Geom.Circle(0, 0, radius),
-        Phaser.Geom.Circle.Contains,
-      );
-      hitArea.on('pointerdown', () => {
+      const hitZone = this.add.zone(cfg.x, cfg.y, radius * 2, radius * 2)
+        .setInteractive(
+          new Phaser.Geom.Circle(radius, radius, radius),
+          Phaser.Geom.Circle.Contains,
+        );
+      hitZone.on('pointerdown', () => {
         this.onNodeClick(cfg.levelId);
       });
-      hitArea.on('pointerover', () => {
+      hitZone.on('pointerover', () => {
         nodeGfx.clear();
         nodeGfx.fillStyle(0x3a2a10, 1);
         nodeGfx.lineStyle(2, 0xffd700, 1);
@@ -226,7 +225,7 @@ export class HubScene extends Phaser.Scene {
         nodeGfx.strokeCircle(0, 0, radius);
         this.game.canvas.style.cursor = 'pointer';
       });
-      hitArea.on('pointerout', () => {
+      hitZone.on('pointerout', () => {
         nodeGfx.clear();
         nodeGfx.fillStyle(0x2a1f0e, 1);
         nodeGfx.lineStyle(2, 0xc4a062, 0.9);
@@ -234,7 +233,6 @@ export class HubScene extends Phaser.Scene {
         nodeGfx.strokeCircle(0, 0, radius);
         this.game.canvas.style.cursor = 'default';
       });
-      container.add(hitArea);
     }
 
     this.levelNodes.set(cfg.levelId, container);
