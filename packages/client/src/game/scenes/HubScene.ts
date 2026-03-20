@@ -312,10 +312,20 @@ export class HubScene extends Phaser.Scene {
   }
 
   /** Called by Preact when "Play" is pressed in LevelDetail overlay. */
-  startLevel(_levelId: string): void {
+  startLevel(levelId: string): void {
+    const levelDef = LEVELS[levelId];
+    const hasBoss = !!levelDef?.boss;
+
     this.cameras.main.fadeOut(400, 0, 0, 0, (_camera: unknown, progress: number) => {
       if (progress === 1) {
-        this.scene.start('GameScene');
+        if (hasBoss && levelDef?.boss) {
+          this.scene.start('BossIntroScene', {
+            bossId: levelDef.boss,
+            levelName: levelDef.name,
+          });
+        } else {
+          this.scene.start('GameScene');
+        }
       }
     });
   }
