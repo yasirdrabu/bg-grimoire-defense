@@ -578,6 +578,239 @@ export const LEVELS: Record<string, LevelDefinition> = {
     ],
   },
 
+  // ─── Act 1, Level 6: "The Convergence" ────────────────────────────────────
+  // Theme: Challenge level — cross-universe enemies, encourages fusion
+  //        Mixed Middle-earth + Wizarding enemies require varied damage types
+  //        No boss — pure gauntlet requiring adaptive tower placement
+  act1_level6: {
+    id: 'act1_level6',
+    name: 'The Convergence',
+    act: 1,
+    levelIndex: 5,
+    gridCols: 22,
+    gridRows: 15,
+    spawns: [[0, 7], [0, 3]],
+    nexus: [21, 7],
+    startingGold: 650,
+    maxNexusHP: 5,
+    waves: [
+      // Wave 1: orc grunt + death eater mix — physical + arcane required
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 8, interval: 750 },
+          { type: 'death_eater', count: 6, interval: 800 },
+        ],
+        parTime: 30000,
+      },
+      // Wave 2: goblin runners (fast physical) + dark wizards (arcane)
+      {
+        enemies: [
+          { type: 'goblin_runner', count: 8, interval: 600 },
+          { type: 'dark_wizard', count: 4, interval: 800 },
+        ],
+        parTime: 28000,
+      },
+      // Wave 3: uruk-hai + acromantula — tough physical + fast poison-immune
+      {
+        enemies: [
+          { type: 'uruk_hai_berserker', count: 4, interval: 800 },
+          { type: 'acromantula', count: 4, interval: 900 },
+        ],
+        parTime: 32000,
+      },
+      // Wave 4: dementor debut (flying arcane) + orc grunts — fusion becomes necessary
+      {
+        enemies: [
+          { type: 'dementor', count: 5, interval: 800 },
+          { type: 'orc_grunt', count: 10, interval: 600 },
+        ],
+        parTime: 30000,
+      },
+      // Wave 5: heavy ME push + wizarding support — stress test for split threat
+      {
+        enemies: [
+          { type: 'uruk_hai_berserker', count: 6, interval: 750 },
+          { type: 'death_eater', count: 8, interval: 700 },
+          { type: 'dark_wizard', count: 4, interval: 800 },
+        ],
+        parTime: 35000,
+      },
+      // Wave 6: cave troll + acromantula — tankiness meets speed diverge
+      {
+        enemies: [
+          { type: 'cave_troll', count: 2, interval: 900 },
+          { type: 'acromantula', count: 6, interval: 800 },
+          { type: 'goblin_runner', count: 8, interval: 550 },
+        ],
+        parTime: 35000,
+      },
+      // Wave 7: dementor + nazgul shade — all flying arcane threats
+      {
+        enemies: [
+          { type: 'dementor', count: 6, interval: 750 },
+          { type: 'nazgul_shade', count: 2, interval: 700 },
+          { type: 'death_eater', count: 6, interval: 750 },
+        ],
+        parTime: 35000,
+      },
+      // Wave 8: orc + uruk-hai wall + dark wizard barrage — full cross push
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 14, interval: 500 },
+          { type: 'uruk_hai_berserker', count: 5, interval: 700 },
+          { type: 'dark_wizard', count: 6, interval: 750 },
+        ],
+        parTime: 38000,
+      },
+      // Wave 9: massive acromantula + death eater speed rush
+      {
+        enemies: [
+          { type: 'acromantula', count: 8, interval: 750 },
+          { type: 'death_eater', count: 10, interval: 650 },
+          { type: 'dementor', count: 5, interval: 750 },
+        ],
+        parTime: 38000,
+      },
+      // Wave 10: cave troll + mountain troll cross-universe siege
+      {
+        enemies: [
+          { type: 'cave_troll', count: 3, interval: 900 },
+          { type: 'troll_hp', count: 3, interval: 950 },
+          { type: 'goblin_runner', count: 10, interval: 500 },
+          { type: 'death_eater', count: 8, interval: 650 },
+        ],
+        parTime: 42000,
+      },
+      // Wave 11: nazgul + dementor aerial flood + uruk-hai ground push
+      {
+        enemies: [
+          { type: 'nazgul_shade', count: 3, interval: 700 },
+          { type: 'dementor', count: 8, interval: 700 },
+          { type: 'uruk_hai_berserker', count: 8, interval: 650 },
+        ],
+        parTime: 42000,
+      },
+      // Wave 12: full cross-universe convergence — all types
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 12, interval: 500 },
+          { type: 'goblin_runner', count: 8, interval: 550 },
+          { type: 'uruk_hai_berserker', count: 6, interval: 650 },
+          { type: 'cave_troll', count: 2, interval: 900 },
+          { type: 'death_eater', count: 10, interval: 600 },
+          { type: 'dark_wizard', count: 6, interval: 700 },
+          { type: 'acromantula', count: 6, interval: 800 },
+          { type: 'dementor', count: 6, interval: 700 },
+        ],
+        parTime: 50000,
+      },
+      // Wave 13: nazgul + troll double threat
+      {
+        enemies: [
+          { type: 'nazgul_shade', count: 4, interval: 700 },
+          { type: 'troll_hp', count: 4, interval: 950 },
+          { type: 'dark_wizard', count: 8, interval: 700 },
+          { type: 'death_eater', count: 10, interval: 600 },
+        ],
+        parTime: 46000,
+      },
+      // Wave 14: near-maximum cross-universe push
+      {
+        enemies: [
+          { type: 'uruk_hai_berserker', count: 10, interval: 600 },
+          { type: 'acromantula', count: 10, interval: 750 },
+          { type: 'dementor', count: 10, interval: 650 },
+          { type: 'cave_troll', count: 3, interval: 900 },
+          { type: 'death_eater', count: 12, interval: 550 },
+        ],
+        parTime: 55000,
+      },
+      // Wave 15: climax — the true convergence
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 16, interval: 480 },
+          { type: 'goblin_runner', count: 12, interval: 500 },
+          { type: 'uruk_hai_berserker', count: 8, interval: 600 },
+          { type: 'nazgul_shade', count: 4, interval: 650 },
+          { type: 'death_eater', count: 14, interval: 550 },
+          { type: 'dark_wizard', count: 10, interval: 650 },
+          { type: 'acromantula', count: 10, interval: 750 },
+          { type: 'dementor', count: 10, interval: 650 },
+          { type: 'troll_hp', count: 4, interval: 950 },
+        ],
+        parTime: 65000,
+      },
+      // Wave 16: final wave — the worlds collide
+      {
+        enemies: [
+          { type: 'uruk_hai_berserker', count: 12, interval: 550 },
+          { type: 'cave_troll', count: 4, interval: 900 },
+          { type: 'troll_hp', count: 4, interval: 950 },
+          { type: 'nazgul_shade', count: 5, interval: 650 },
+          { type: 'acromantula', count: 12, interval: 700 },
+          { type: 'dementor', count: 14, interval: 620 },
+          { type: 'dark_wizard', count: 12, interval: 650 },
+          { type: 'death_eater', count: 14, interval: 550 },
+        ],
+        parTime: 70000,
+      },
+      // Wave 17: pre-final surge
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 20, interval: 450 },
+          { type: 'goblin_runner', count: 16, interval: 480 },
+          { type: 'death_eater', count: 16, interval: 530 },
+          { type: 'dark_wizard', count: 14, interval: 620 },
+          { type: 'nazgul_shade', count: 6, interval: 650 },
+          { type: 'troll_hp', count: 5, interval: 950 },
+        ],
+        parTime: 72000,
+      },
+      // Wave 18: true convergence final
+      {
+        enemies: [
+          { type: 'uruk_hai_berserker', count: 14, interval: 500 },
+          { type: 'cave_troll', count: 5, interval: 880 },
+          { type: 'troll_hp', count: 6, interval: 900 },
+          { type: 'acromantula', count: 14, interval: 700 },
+          { type: 'dementor', count: 16, interval: 600 },
+          { type: 'dark_wizard', count: 14, interval: 620 },
+          { type: 'death_eater', count: 18, interval: 500 },
+          { type: 'nazgul_shade', count: 6, interval: 620 },
+        ],
+        parTime: 80000,
+      },
+      // Wave 19: overwhelming flood
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 22, interval: 430 },
+          { type: 'uruk_hai_berserker', count: 16, interval: 480 },
+          { type: 'death_eater', count: 20, interval: 490 },
+          { type: 'dementor', count: 18, interval: 580 },
+          { type: 'acromantula', count: 16, interval: 680 },
+          { type: 'troll_hp', count: 6, interval: 900 },
+        ],
+        parTime: 85000,
+      },
+      // Wave 20: final convergence cataclysm — all three universes at maximum
+      {
+        enemies: [
+          { type: 'orc_grunt', count: 20, interval: 420 },
+          { type: 'goblin_runner', count: 18, interval: 450 },
+          { type: 'uruk_hai_berserker', count: 14, interval: 500 },
+          { type: 'cave_troll', count: 6, interval: 880 },
+          { type: 'troll_hp', count: 6, interval: 900 },
+          { type: 'nazgul_shade', count: 8, interval: 600 },
+          { type: 'death_eater', count: 20, interval: 480 },
+          { type: 'dark_wizard', count: 16, interval: 600 },
+          { type: 'acromantula', count: 16, interval: 670 },
+          { type: 'dementor', count: 20, interval: 560 },
+        ],
+        parTime: 95000,
+      },
+    ],
+  },
+
   // ─── Act 2, Level 7: "The Forbidden Forest" ───────────────────────────────
   // Theme: Act 2 intro — Wizarding enemies only, HP 2x baseline
   // HP scale: 2x base (act 2, levelIndex 0)
