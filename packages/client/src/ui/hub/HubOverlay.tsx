@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'preact/hooks';
 import { LevelDetail } from './LevelDetail';
 import { Settings } from './Settings';
+import { Profile } from './Profile';
 import { GrimoireBook } from '../grimoire/GrimoireBook';
+import { CosmeticStore } from '../store/CosmeticStore';
 import { useStore } from '../hooks/useStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
@@ -15,58 +17,6 @@ const TAB_CONFIG: Array<{ id: HubTab; label: string; icon: string }> = [
   { id: 'store', label: 'Store', icon: '🏪' },
   { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
 ];
-
-function StubPanel({ title, onClose }: { title: string; onClose: () => void }) {
-  return (
-    <>
-      <div
-        class="hud-interactive"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          zIndex: 50,
-        }}
-        onClick={onClose}
-      />
-      <div
-        class="hud-interactive"
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '400px',
-          maxWidth: '95vw',
-          background: 'linear-gradient(180deg, var(--hud-bg-dark) 0%, var(--hud-bg-slate) 100%)',
-          border: '1px solid var(--hud-border)',
-          borderRadius: '12px',
-          padding: '32px 24px',
-          zIndex: 51,
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: '17px', fontWeight: '700', color: '#c4a062', marginBottom: '12px' }}>
-          {title}
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--hud-muted)', marginBottom: '24px', fontStyle: 'italic' }}>
-          Coming soon…
-        </div>
-        <button
-          class="hud-btn hud-interactive"
-          style={{
-            padding: '9px 24px',
-            fontSize: '13px',
-            color: 'var(--hud-text)',
-          }}
-          onClick={onClose}
-        >
-          Close
-        </button>
-      </div>
-    </>
-  );
-}
 
 type LeaderboardScope = 'campaign' | string; // 'campaign' or a levelId
 
@@ -384,10 +334,10 @@ export function HubOverlay() {
         <GrimoireBook onClose={handleClose} />
       )}
       {activeTab === 'profile' && (
-        <StubPanel title="Profile" onClose={handleClose} />
+        <Profile onClose={handleClose} />
       )}
       {activeTab === 'store' && (
-        <StubPanel title="Store" onClose={handleClose} />
+        <CosmeticStore onClose={handleClose} />
       )}
       {activeTab === 'leaderboard' && (
         <LeaderboardPanel onClose={handleClose} />

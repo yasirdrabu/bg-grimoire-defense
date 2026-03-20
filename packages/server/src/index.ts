@@ -6,6 +6,8 @@ import { createAuthRouter } from './routes/auth.js';
 import { createProfileRouter } from './routes/profile.js';
 import { createSessionRouter, createScoreRouter } from './routes/sessions.js';
 import { createLeaderboardRouter } from './routes/leaderboard.js';
+import { createStoreRouter } from './routes/store.js';
+import { createGrimoireRouter } from './routes/grimoire.js';
 import { authMiddleware } from './middleware/auth.js';
 import { createCorsMiddleware } from './middleware/cors.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
@@ -36,6 +38,12 @@ export function createApp(db: DB = defaultDb): Hono {
 
   // Leaderboard routes
   app.route('/api/leaderboard', createLeaderboardRouter(db));
+
+  // Store routes
+  app.route('/api/store', createStoreRouter(db));
+
+  // Grimoire routes
+  app.route('/api/grimoire', createGrimoireRouter(db));
 
   // Example protected route — demonstrates authMiddleware usage
   app.get('/api/me', authMiddleware, (c) => {

@@ -147,6 +147,75 @@ export interface SessionStatsPayload {
 
 // ---- API Client ----
 
+// ---- Store types ----
+
+export interface StoreItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  priceCoins: number;
+  previewImageUrl: string | null;
+  metadata: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface StoreItemsResponse {
+  items: StoreItem[];
+}
+
+export interface PlayerPurchase {
+  id: string;
+  playerId: string;
+  itemId: string;
+  purchasedAt: string;
+}
+
+export interface PurchaseResponse {
+  purchase: PlayerPurchase;
+  remaining_coins: number;
+}
+
+export interface MyItemsResponse {
+  purchases: PlayerPurchase[];
+}
+
+export interface PlayerEquipped {
+  playerId: string;
+  slot: string;
+  itemId: string;
+}
+
+export interface EquipResponse {
+  equipped: PlayerEquipped;
+}
+
+// ---- Grimoire types ----
+
+export interface FusionDiscovery {
+  id: string;
+  playerId: string;
+  fusionId: string;
+  discoveredAt: string;
+}
+
+export interface BestiaryProgress {
+  levelsCompleted: number;
+  totalStars: number;
+  totalFusionsDiscovered: number;
+}
+
+export interface GrimoireResponse {
+  discovered_fusions: FusionDiscovery[];
+  bestiary_progress: BestiaryProgress;
+}
+
+export interface GrimoireDiscoverResponse {
+  discovery: FusionDiscovery;
+  essence_bonus: number;
+}
+
 export class ApiClient {
   private token: string | null = null;
 
@@ -240,6 +309,35 @@ export class ApiClient {
   ): Promise<LeaderboardResponse> {
     const params = new URLSearchParams({ difficulty, page: String(page) });
     return this.request<LeaderboardResponse>('GET', `/leaderboard/campaign?${params}`);
+  }
+
+  // ---- Store ----
+
+  async getStoreItems(category?: string): Promise<StoreItemsResponse> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    return this.request<StoreItemsResponse>('GET', `/store/items${params}`);
+  }
+
+  async purchaseItem(itemId: string): Promise<PurchaseResponse> {
+    return this.request<PurchaseResponse>('POST', '/store/purchase', { item_id: itemId });
+  }
+
+  async getMyItems(): Promise<MyItemsResponse> {
+    return this.request<MyItemsResponse>('GET', '/store/my-items');
+  }
+
+  async equipItem(slot: string, itemId: string): Promise<EquipResponse> {
+    return this.request<EquipResponse>('PUT', '/store/equip', { slot, item_id: itemId });
+  }
+
+  // ---- Grimoire ----
+
+  async getGrimoire(): Promise<GrimoireResponse> {
+    return this.request<GrimoireResponse>('GET', '/grimoire');
+  }
+
+  async discoverFusion(fusionId: string): Promise<GrimoireDiscoverResponse> {
+    return this.request<GrimoireDiscoverResponse>('POST', '/grimoire/discover', { fusion_id: fusionId });
   }
 }
 
