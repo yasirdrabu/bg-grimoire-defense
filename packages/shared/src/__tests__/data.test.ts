@@ -15,6 +15,11 @@ describe('Tower data', () => {
     expect(wzTowers).toHaveLength(5);
   });
 
+  it('should have all 5 Westeros towers', () => {
+    const weTowers = Object.values(TOWERS).filter((t) => t.universe === 'westeros');
+    expect(weTowers).toHaveLength(5);
+  });
+
   it('should have Elven Archer Spire with correct archetype', () => {
     const archer = TOWERS['elven_archer_spire']!;
     expect(archer).toBeDefined();
@@ -71,6 +76,11 @@ describe('Enemy data', () => {
     expect(wzEnemies).toHaveLength(8);
   });
 
+  it('should have all 7 Westeros enemies (5 regulars + 2 bosses)', () => {
+    const weEnemies = Object.values(ENEMIES).filter((e) => e.universe === 'westeros');
+    expect(weEnemies).toHaveLength(7);
+  });
+
   it('should have Basilisk and Voldemort as wizarding bosses', () => {
     const basilisk = ENEMIES['basilisk'];
     expect(basilisk).toBeDefined();
@@ -83,6 +93,28 @@ describe('Enemy data', () => {
     expect(voldemort!.isBoss).toBe(true);
     expect(voldemort!.bossPhases).toBe(3);
     expect(voldemort!.bossEssenceReward).toBe(200);
+  });
+
+  it('should have White Walker General and Night King as Westeros bosses', () => {
+    const wwg = ENEMIES['white_walker_general'];
+    expect(wwg).toBeDefined();
+    expect(wwg!.isBoss).toBe(true);
+    expect(wwg!.bossPhases).toBe(2);
+    expect(wwg!.bossEssenceReward).toBe(150);
+
+    const nk = ENEMIES['night_king'];
+    expect(nk).toBeDefined();
+    expect(nk!.isBoss).toBe(true);
+    expect(nk!.bossPhases).toBe(3);
+    expect(nk!.bossEssenceReward).toBe(250);
+  });
+
+  it('should have Westeros enemies with correct ability types', () => {
+    expect(ENEMIES['wight']!.abilityType).toBe('none');
+    expect(ENEMIES['unsullied']!.abilityType).toBe('damage_reduction');
+    expect(ENEMIES['dothraki_rider']!.abilityType).toBe('dodge_first');
+    expect(ENEMIES['shadow_assassin']!.abilityType).toBe('invisible');
+    expect(ENEMIES['giant']!.abilityType).toBe('none');
   });
 
   it('should have Dementor as a flying enemy', () => {
@@ -124,6 +156,17 @@ describe('Level data', () => {
   it('should have 6 Act 2 levels (7-12)', () => {
     const act2Levels = Object.values(LEVELS).filter((l) => l.act === 2);
     expect(act2Levels).toHaveLength(6);
+  });
+
+  it('should have 6 Act 3 levels (13-18)', () => {
+    const act3Levels = Object.values(LEVELS).filter((l) => l.act === 3);
+    expect(act3Levels).toHaveLength(6);
+  });
+
+  it('should have correct Act 3 level indices (0-5)', () => {
+    const act3Levels = Object.values(LEVELS).filter((l) => l.act === 3);
+    const indices = act3Levels.map((l) => l.levelIndex).sort((a, b) => a - b);
+    expect(indices).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   it('should have correct Act 2 level indices (0-5)', () => {
@@ -171,5 +214,50 @@ describe('Level data', () => {
     expect(allEnemyTypes.has('death_eater')).toBe(true);
     expect(allEnemyTypes.has('dementor')).toBe(true);
     expect(allEnemyTypes.has('voldemort')).toBe(true);
+  });
+
+  it('should have White Walker General boss on Level 17', () => {
+    const level17 = LEVELS['act3_level17'];
+    expect(level17).toBeDefined();
+    expect(level17!.boss).toBe('white_walker_general');
+    expect(level17!.waves).toHaveLength(22);
+    expect(level17!.act).toBe(3);
+  });
+
+  it('should have Night King boss on Level 18 (Final Convergence)', () => {
+    const level18 = LEVELS['act3_level18'];
+    expect(level18).toBeDefined();
+    expect(level18!.boss).toBe('night_king');
+    expect(level18!.waves).toHaveLength(25);
+    expect(level18!.gridCols).toBe(28);
+    expect(level18!.gridRows).toBe(20);
+  });
+
+  it('should have correct starting gold for Act 3 levels', () => {
+    const act3Levels = Object.values(LEVELS).filter((l) => l.act === 3);
+    for (const level of act3Levels) {
+      expect(level.startingGold).toBe(1000);
+    }
+  });
+
+  it('should have Final Convergence level with all 3 universe enemies', () => {
+    const level18 = LEVELS['act3_level18']!;
+    const allEnemyTypes = new Set<string>();
+    for (const wave of level18.waves) {
+      for (const group of wave.enemies) {
+        allEnemyTypes.add(group.type);
+      }
+    }
+    // Middle-earth enemies
+    expect(allEnemyTypes.has('orc_grunt')).toBe(true);
+    expect(allEnemyTypes.has('uruk_hai_berserker')).toBe(true);
+    expect(allEnemyTypes.has('nazgul_shade')).toBe(true);
+    // Wizarding enemies
+    expect(allEnemyTypes.has('death_eater')).toBe(true);
+    expect(allEnemyTypes.has('dementor')).toBe(true);
+    // Westeros enemies
+    expect(allEnemyTypes.has('wight')).toBe(true);
+    expect(allEnemyTypes.has('shadow_assassin')).toBe(true);
+    expect(allEnemyTypes.has('night_king')).toBe(true);
   });
 });
