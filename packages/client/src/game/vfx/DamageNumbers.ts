@@ -8,6 +8,9 @@
  *
  * This keeps the manager free of a hard Phaser dependency so it is easily
  * unit-testable.
+ *
+ * Respects the player's `reducedMotion` accessibility setting: if enabled,
+ * floating numbers are suppressed entirely to minimize animation.
  */
 
 // ---------------------------------------------------------------------------
@@ -15,6 +18,8 @@
 // ---------------------------------------------------------------------------
 
 export type DamageType = 'physical' | 'fire' | 'ice' | 'poison' | 'arcane';
+
+import { usePlayerStore } from '../../stores/usePlayerStore';
 
 /** Colour codes by damage type (CSS-style hex strings for Phaser setText tint). */
 export const DAMAGE_TYPE_COLORS: Record<DamageType, number> = {
@@ -75,6 +80,9 @@ export class DamageNumberManager {
    * @param isCritical - critical hits are larger and start with an overshoot
    */
   spawn(x: number, y: number, damage: number, damageType: string, isCritical: boolean): void {
+    // Suppress animated floating numbers when reduced motion is enabled
+    if (usePlayerStore.getState().reducedMotion) return;
+
     const type = (DAMAGE_TYPE_COLORS[damageType as DamageType] !== undefined)
       ? (damageType as DamageType)
       : 'physical';

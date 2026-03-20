@@ -76,6 +76,11 @@ export class GameScene extends Phaser.Scene {
   // Ghost preview
   private ghostSprite: Phaser.GameObjects.Sprite | null = null;
   private rangeCircle: Phaser.GameObjects.Graphics | null = null;
+  private ghostLabel: Phaser.GameObjects.Text | null = null;
+
+  // Path visualization overlay
+  private pathOverlayVisible = false;
+  private pathOverlay: Phaser.GameObjects.Graphics | null = null;
 
   // Session tracking for server score submission
   private sessionId: string | null = null;
@@ -206,6 +211,66 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-SPACE', () => {
       useGameStore.setState({ sendWaveEarlyFlag: true });
     });
+    // P: Toggle pause
+    this.input.keyboard?.on('keydown-P', () => {
+      const current = useGameStore.getState().isPaused;
+      useGameStore.setState({ isPaused: !current });
+    });
+    // V: Toggle path visualization overlay
+    this.input.keyboard?.on('keydown-V', () => {
+      this.togglePathOverlay();
+    });
+    // + / = : Cycle game speed up
+    this.input.keyboard?.on('keydown-PLUS', () => {
+      this.cycleGameSpeed(1);
+    });
+    this.input.keyboard?.on('keydown-EQUALS', () => {
+      this.cycleGameSpeed(1);
+    });
+    // - : Cycle game speed down
+    this.input.keyboard?.on('keydown-MINUS', () => {
+      this.cycleGameSpeed(-1);
+    });
+  }
+
+  private togglePathOverlay(): void {
+    this.pathOverlayVisible = !this.pathOverlayVisible;
+    if (!this.pathOverlay) {
+      this.pathOverlay = this.add.graphics();
+      this.pathOverlay.setDepth(LAYER_GRID_OVERLAY + 2);
+    }
+    if (this.pathOverlayVisible) {
+      this.drawPathOverlay();
+    } else {
+      this.pathOverlay.clear();
+    }
+  }
+
+  private drawPathOverlay(): void {
+    if (!this.pathOverlay) return;
+    this.pathOverlay.clear();
+    this.pathOverlay.lineStyle(3, 0xffff00, 0.8);
+    for (let i = 0; i < this.currentPath.length - 1; i++) {
+      const [ax, ay] = this.currentPath[i]!;
+      const [bx, by] = this.currentPath[i + 1]!;
+      const a = gridToScreen(ax, ay, this.mapOffsetX, this.mapOffsetY);
+      const b = gridToScreen(bx, by, this.mapOffsetX, this.mapOffsetY);
+      this.pathOverlay.lineBetween(
+        a.screenX + TILE_W / 2, a.screenY + TILE_H / 2,
+        b.screenX + TILE_W / 2, b.screenY + TILE_H / 2,
+      );
+    }
+  }
+
+  private cycleGameSpeed(direction: 1 | -1): void {
+    const SPEEDS: Array<1 | 2 | 3> = [1, 2, 3];
+    const current = useGameStore.getState().gameSpeed;
+    const idx = SPEEDS.indexOf(current);
+    const nextIdx = Math.max(0, Math.min(SPEEDS.length - 1, (idx === -1 ? 0 : idx) + direction));
+    const nextSpeed = SPEEDS[nextIdx];
+    if (nextSpeed !== undefined) {
+      useGameStore.setState({ gameSpeed: nextSpeed });
+    }
   }
 
   private drawGrid(): void {
@@ -371,6 +436,21 @@ export class GameScene extends Phaser.Scene {
     this.ghostSprite.setTexture(ui.buildTowerType);
     this.ghostSprite.setTint(valid ? 0x44FF44 : 0xFF4444);
 
+    // Accessibility text indicator (color-independent placement feedback)
+    if (!this.ghostLabel) {
+      this.ghostLabel = this.add.text(0, 0, '', {
+        fontSize: '18px',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 3,
+      });
+      this.ghostLabel.setDepth(901);
+      this.ghostLabel.setOrigin(0.5, 1);
+    }
+    this.ghostLabel.setText(valid ? '\u2713' : '\u2717');
+    this.ghostLabel.setColor(valid ? '#44FF44' : '#FF4444');
+    this.ghostLabel.setPosition(screenX + TILE_W / 2, screenY);
+
     // Range circle
     if (!this.rangeCircle) {
       this.rangeCircle = this.add.graphics();
@@ -391,6 +471,10 @@ export class GameScene extends Phaser.Scene {
     if (this.ghostSprite) {
       this.ghostSprite.destroy();
       this.ghostSprite = null;
+    }
+    if (this.ghostLabel) {
+      this.ghostLabel.destroy();
+      this.ghostLabel = null;
     }
     if (this.rangeCircle) {
       this.rangeCircle.clear();
