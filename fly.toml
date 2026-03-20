@@ -1,0 +1,17 @@
+app = "grimoire-defense"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+
+[mounts]
+  source = "grimoire_data"
+  destination = "/app/data"
+
+[env]
+  PORT = "3001"
+  DATABASE_URL = "/app/data/grimoire.db"
