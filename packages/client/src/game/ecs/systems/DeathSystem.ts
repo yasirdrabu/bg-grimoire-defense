@@ -4,6 +4,7 @@ import { HealthComponent } from '../components/Health';
 import { EnemyDataComponent } from '../components/EnemyData';
 import { useGameStore } from '../../../stores/useGameStore';
 import { getComboTracker, getElapsedMs } from './ScoreSystem';
+import { audioManager } from '../../audio/AudioManager';
 
 export function deathSystem(world: World, _dt: number): void {
   const entities = world.query(HealthComponent, EnemyDataComponent);
@@ -24,8 +25,18 @@ export function deathSystem(world: World, _dt: number): void {
       score: state.score + enemyData.scoreValue,
     });
 
+    // Play enemy death SFX
+    audioManager.playEnemyDeath(enemyData.enemyType);
+
     // Register kill with combo tracker
-    getComboTracker().registerKill(getElapsedMs());
+    const tracker = getComboTracker();
+    tracker.registerKill(getElapsedMs());
+
+    // Play combo SFX at 3+ chain
+    const currentCombo = useGameStore.getState().comboCount;
+    if (currentCombo >= 3) {
+      audioManager.playComboHit(currentCombo);
+    }
 
     // Destroy entity
     world.destroyEntity(id);

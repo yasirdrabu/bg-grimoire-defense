@@ -5,6 +5,7 @@ import { TowerDataComponent } from '../components/TowerData';
 import { ProjectileComponent } from '../components/Projectile';
 import { RenderableComponent } from '../components/Renderable';
 import { TowerDisabledComponent } from '../components/TowerDisabled';
+import { audioManager } from '../../audio/AudioManager';
 
 export function attackSystem(world: World, dt: number): void {
   const dtSec = dt / 1000;
@@ -44,6 +45,10 @@ export function attackSystem(world: World, dt: number): void {
       spriteKey: `proj_${attack.projectileType}`,
       visible: true,
     });
+
+    // Play tower fire SFX
+    const towerData = world.getComponent(towerId, TowerDataComponent)!;
+    audioManager.playTowerFire(towerData.towerId);
 
     // Reset cooldown
     attack.cooldownRemaining = attack.attackSpeed;

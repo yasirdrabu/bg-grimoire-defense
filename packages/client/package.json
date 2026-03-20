@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@grimoire/shared": "workspace:*",
+    "howler": "^2.2.4",
     "pathfinding": "^0.4.18",
     "phaser": "^3.80.0",
     "preact": "^10.25.0",
@@ -21,6 +22,7 @@
     "@preact/preset-vite": "^2.9.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/preact": "^3.2.4",
+    "@types/howler": "^2.2.12",
     "jsdom": "^28.1.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",

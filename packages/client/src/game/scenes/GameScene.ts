@@ -49,6 +49,7 @@ import { findFusionRecipe } from '../towers/FusionEngine';
 // Pathfinding
 import PF from 'pathfinding';
 import { emitSceneChange } from '../utils/sceneEvents';
+import { audioManager } from '../audio/AudioManager';
 
 export class GameScene extends Phaser.Scene {
   world!: GameWorld;
@@ -292,6 +293,7 @@ export class GameScene extends Phaser.Scene {
       renderable.sprite = sprite;
 
       useGameStore.setState({ gold: game.gold - towerDef.cost });
+      audioManager.playTowerPlace();
       this.computePath();
       this.clearGhost();
     } else if (ui.inputMode === 'idle' || ui.inputMode === 'selected') {
@@ -429,6 +431,7 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'WAVE_STARTED':
           useGameStore.setState({ wave: event.waveIndex + 1, waveState: 'spawning' });
+          audioManager.playWaveStart();
           break;
         case 'WAVE_CLEARED': {
           const currentGold = useGameStore.getState().gold;
@@ -437,6 +440,7 @@ export class GameScene extends Phaser.Scene {
             waveState: 'wave_clear',
             gold: currentGold + waveClearBonus,
           });
+          audioManager.playWaveClear();
           break;
         }
         case 'APPLY_INTEREST': {

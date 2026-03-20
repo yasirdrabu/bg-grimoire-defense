@@ -1,5 +1,6 @@
 import { useStore } from '../hooks/useStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
+import { audioManager } from '../../game/audio/AudioManager';
 
 interface SettingsProps {
   onClose: () => void;
@@ -102,6 +103,7 @@ export function Settings({ onClose }: SettingsProps) {
                 onInput={(e) => {
                   const val = parseFloat((e.target as HTMLInputElement).value);
                   setVolume(val);
+                  audioManager.setMasterVolume(val);
                 }}
                 style={{ width: '120px', accentColor: 'var(--hud-gold)' }}
               />
@@ -155,7 +157,7 @@ export function Settings({ onClose }: SettingsProps) {
             textAlign: 'center',
           }}
         >
-          Audio wiring and full accessibility options coming soon.
+          Audio infrastructure is wired. Drop .ogg assets into /public/audio/ to enable sound.
         </div>
       </div>
     </>
