@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { TOWERS } from '../data/towers';
 import { ENEMIES } from '../data/enemies';
 import { LEVELS } from '../data/levels';
+import { FUSIONS } from '../data/fusions';
+import { CHALLENGE_MODIFIERS } from '../data/challenges';
 import { getScaledHP } from '../types/enemy';
 
 describe('Tower data', () => {
@@ -148,9 +150,9 @@ describe('Enemy data', () => {
 });
 
 describe('Level data', () => {
-  it('should have 5 Act 1 levels', () => {
+  it('should have 6 Act 1 levels (5 main + 1 convergence challenge)', () => {
     const act1Levels = Object.values(LEVELS).filter((l) => l.act === 1);
-    expect(act1Levels).toHaveLength(5);
+    expect(act1Levels).toHaveLength(6);
   });
 
   it('should have 6 Act 2 levels (7-12)', () => {
@@ -259,5 +261,173 @@ describe('Level data', () => {
     expect(allEnemyTypes.has('wight')).toBe(true);
     expect(allEnemyTypes.has('shadow_assassin')).toBe(true);
     expect(allEnemyTypes.has('night_king')).toBe(true);
+  });
+
+  it('should have correct Act 1 level indices (0-5)', () => {
+    const act1Levels = Object.values(LEVELS).filter((l) => l.act === 1);
+    const indices = act1Levels.map((l) => l.levelIndex).sort((a, b) => a - b);
+    expect(indices).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('should have act1_level6 as Convergence challenge with 20 waves', () => {
+    const level6 = LEVELS['act1_level6'];
+    expect(level6).toBeDefined();
+    expect(level6!.name).toBe('The Convergence');
+    expect(level6!.waves).toHaveLength(20);
+    expect(level6!.gridCols).toBe(22);
+    expect(level6!.spawns).toHaveLength(2);
+    expect(level6!.boss).toBeUndefined();
+  });
+
+  it('should have act1_level6 with cross-universe enemies from ME and Wizarding', () => {
+    const level6 = LEVELS['act1_level6']!;
+    const allEnemyTypes = new Set<string>();
+    for (const wave of level6.waves) {
+      for (const group of wave.enemies) {
+        allEnemyTypes.add(group.type);
+      }
+    }
+    // Middle-earth enemies
+    expect(allEnemyTypes.has('orc_grunt')).toBe(true);
+    expect(allEnemyTypes.has('uruk_hai_berserker')).toBe(true);
+    expect(allEnemyTypes.has('nazgul_shade')).toBe(true);
+    // Wizarding enemies
+    expect(allEnemyTypes.has('death_eater')).toBe(true);
+    expect(allEnemyTypes.has('dementor')).toBe(true);
+    expect(allEnemyTypes.has('dark_wizard')).toBe(true);
+  });
+
+  it('should have all 18 levels defined across 3 acts', () => {
+    const totalLevels = Object.values(LEVELS).length;
+    expect(totalLevels).toBe(18);
+  });
+});
+
+describe('Fusion data', () => {
+  const towerIds = new Set(Object.keys(TOWERS));
+
+  it('should have exactly 30 fusion recipes', () => {
+    expect(Object.keys(FUSIONS)).toHaveLength(30);
+  });
+
+  it('should have 9 intra-universe recipes', () => {
+    const intra = Object.values(FUSIONS).filter((f) => f.tier === 'intra');
+    expect(intra).toHaveLength(9);
+  });
+
+  it('should have 18 cross-universe recipes', () => {
+    const cross = Object.values(FUSIONS).filter((f) => f.tier === 'cross');
+    expect(cross).toHaveLength(18);
+  });
+
+  it('should have 3 convergence recipes', () => {
+    const convergence = Object.values(FUSIONS).filter((f) => f.tier === 'convergence');
+    expect(convergence).toHaveLength(3);
+  });
+
+  it('should have all recipe inputs reference valid tower IDs', () => {
+    for (const recipe of Object.values(FUSIONS)) {
+      const [inputA, inputB] = recipe.inputs;
+      expect(towerIds.has(inputA), `Recipe ${recipe.id}: input "${inputA}" not found in TOWERS`).toBe(true);
+      expect(towerIds.has(inputB), `Recipe ${recipe.id}: input "${inputB}" not found in TOWERS`).toBe(true);
+    }
+  });
+
+  it('should have no duplicate input pairs', () => {
+    const seen = new Set<string>();
+    for (const recipe of Object.values(FUSIONS)) {
+      const [a, b] = recipe.inputs;
+      const key = [a, b].sort().join('|');
+      expect(seen.has(key), `Duplicate input pair found: ${key}`).toBe(false);
+      seen.add(key);
+    }
+  });
+
+  it('should have 3 intra Middle-earth recipes', () => {
+    const meIntra = Object.values(FUSIONS).filter(
+      (f) => f.tier === 'intra' && f.universe === 'middle_earth',
+    );
+    expect(meIntra).toHaveLength(3);
+  });
+
+  it('should have 3 intra Wizarding recipes', () => {
+    const wizIntra = Object.values(FUSIONS).filter(
+      (f) => f.tier === 'intra' && f.universe === 'wizarding',
+    );
+    expect(wizIntra).toHaveLength(3);
+  });
+
+  it('should have 3 intra Westeros recipes', () => {
+    const weIntra = Object.values(FUSIONS).filter(
+      (f) => f.tier === 'intra' && f.universe === 'westeros',
+    );
+    expect(weIntra).toHaveLength(3);
+  });
+
+  it('should have correct essenceCost for each tier', () => {
+    for (const recipe of Object.values(FUSIONS)) {
+      if (recipe.tier === 'intra') {
+        expect(recipe.essenceCost).toBe(25);
+      } else if (recipe.tier === 'cross') {
+        expect(recipe.essenceCost).toBe(50);
+      } else if (recipe.tier === 'convergence') {
+        expect(recipe.essenceCost).toBe(100);
+      }
+    }
+  });
+
+  it('should have all recipes with required fields', () => {
+    for (const recipe of Object.values(FUSIONS)) {
+      expect(recipe.id).toBeTruthy();
+      expect(recipe.name).toBeTruthy();
+      expect(recipe.inputs).toHaveLength(2);
+      expect(recipe.mechanic).toBeTruthy();
+      expect(recipe.hint).toBeTruthy();
+      expect(recipe.stats.damage).toBeGreaterThan(0);
+      expect(recipe.stats.range).toBeGreaterThan(0);
+      expect(recipe.stats.attackSpeed).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('Challenge modifier data', () => {
+  it('should have exactly 4 challenge modifiers', () => {
+    expect(Object.keys(CHALLENGE_MODIFIERS)).toHaveLength(4);
+  });
+
+  it('should have all expected modifier IDs', () => {
+    expect(CHALLENGE_MODIFIERS['no_utility']).toBeDefined();
+    expect(CHALLENGE_MODIFIERS['double_speed']).toBeDefined();
+    expect(CHALLENGE_MODIFIERS['limited_gold']).toBeDefined();
+    expect(CHALLENGE_MODIFIERS['fragile_nexus']).toBeDefined();
+  });
+
+  it('should have valid modifier structures', () => {
+    for (const mod of Object.values(CHALLENGE_MODIFIERS)) {
+      expect(mod.id).toBeTruthy();
+      expect(mod.name).toBeTruthy();
+      expect(mod.description).toBeTruthy();
+      expect(typeof mod.modifiers).toBe('object');
+    }
+  });
+
+  it('should have no_utility ban only utility role', () => {
+    const mod = CHALLENGE_MODIFIERS['no_utility']!;
+    expect(mod.modifiers.bannedTowerRoles).toEqual(['utility']);
+  });
+
+  it('should have double_speed use 2x multiplier', () => {
+    const mod = CHALLENGE_MODIFIERS['double_speed']!;
+    expect(mod.modifiers.enemySpeedMultiplier).toBe(2);
+  });
+
+  it('should have limited_gold use 0.5x multiplier', () => {
+    const mod = CHALLENGE_MODIFIERS['limited_gold']!;
+    expect(mod.modifiers.startingGoldMultiplier).toBe(0.5);
+  });
+
+  it('should have fragile_nexus set maxNexusHP to 1', () => {
+    const mod = CHALLENGE_MODIFIERS['fragile_nexus']!;
+    expect(mod.modifiers.maxNexusHP).toBe(1);
   });
 });
