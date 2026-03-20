@@ -9,6 +9,14 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ['phaser'],
+          vendor: ['preact', 'zustand'],
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',
