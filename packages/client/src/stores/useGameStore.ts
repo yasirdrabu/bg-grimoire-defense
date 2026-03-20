@@ -78,8 +78,10 @@ export interface GameState {
   // Level/difficulty selection (set in HubScene, read by GameScene)
   selectedLevelId: string;
   selectedDifficulty: Difficulty;
+  selectedModifierId: string | null;
   setSelectedLevel: (levelId: string) => void;
   setSelectedDifficulty: (d: Difficulty) => void;
+  setSelectedModifier: (modifierId: string | null) => void;
 
   // Action queue (written by Preact, drained by InputSystem)
   pendingActions: GameAction[];
@@ -118,6 +120,7 @@ const DEFAULT_STATE = {
   scoreBreakdown: null as GameState['scoreBreakdown'],
   selectedLevelId: 'act1_level1',
   selectedDifficulty: 'normal' as Difficulty,
+  selectedModifierId: null as string | null,
   pendingActions: [] as GameAction[],
 };
 
@@ -130,6 +133,10 @@ export const useGameStore = createStore<GameState>((set, get) => ({
 
   setSelectedDifficulty: (d: Difficulty) => {
     set({ selectedDifficulty: d });
+  },
+
+  setSelectedModifier: (modifierId: string | null) => {
+    set({ selectedModifierId: modifierId });
   },
 
   dispatch: (action: GameAction) => {

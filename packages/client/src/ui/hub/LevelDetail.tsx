@@ -1,5 +1,5 @@
-import { LEVELS } from '@grimoire/shared';
-import type { Difficulty, WaveEnemyGroup } from '@grimoire/shared';
+import { LEVELS, CHALLENGE_MODIFIERS } from '@grimoire/shared';
+import type { Difficulty, WaveEnemyGroup, ChallengeModifier } from '@grimoire/shared';
 import { useStore } from '../hooks/useStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 import { useGameStore } from '../../stores/useGameStore';
@@ -37,9 +37,11 @@ interface LevelDetailProps {
 export function LevelDetail({ levelId, onClose }: LevelDetailProps) {
   const levelDef = LEVELS[levelId];
   const selectedDifficulty = useStore(useGameStore, (s) => s.selectedDifficulty);
+  const selectedModifierId = useStore(useGameStore, (s) => s.selectedModifierId);
   const progress = useStore(usePlayerStore, (s) => s.progress.get(levelId));
   const bestScore = progress?.bestScore ?? 0;
   const bestStars = progress?.stars ?? 0;
+  const isCompleted = bestStars > 0;
 
   if (!levelDef) return null;
 
@@ -53,6 +55,11 @@ export function LevelDetail({ levelId, onClose }: LevelDetailProps) {
 
   const handleDifficulty = (d: Difficulty) => {
     useGameStore.getState().setSelectedDifficulty(d);
+  };
+
+  const handleModifier = (e: Event) => {
+    const value = (e.target as HTMLSelectElement).value;
+    useGameStore.getState().setSelectedModifier(value === '' ? null : value);
   };
 
   const handlePlay = () => {
@@ -278,6 +285,56 @@ export function LevelDetail({ levelId, onClose }: LevelDetailProps) {
             {DIFFICULTY_DESCRIPTIONS[selectedDifficulty]}
           </div>
         </div>
+
+        {/* Challenge Modifier — only shown for completed levels */}
+        {isCompleted && (
+          <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--hud-border-subtle)' }}>
+            <div
+              style={{
+                fontSize: '11px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--hud-muted)',
+                marginBottom: '10px',
+              }}
+            >
+              Challenge Modifier
+            </div>
+            <select
+              value={selectedModifierId ?? ''}
+              onChange={handleModifier}
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                background: 'rgba(148, 163, 184, 0.07)',
+                border: '1px solid var(--hud-border-subtle)',
+                borderRadius: '6px',
+                color: 'var(--hud-text)',
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">None</option>
+              {(Object.values(CHALLENGE_MODIFIERS) as ChallengeModifier[]).map((mod) => (
+                <option key={mod.id} value={mod.id}>
+                  {mod.name}
+                </option>
+              ))}
+            </select>
+            {selectedModifierId && CHALLENGE_MODIFIERS[selectedModifierId] && (
+              <div
+                style={{
+                  marginTop: '6px',
+                  fontSize: '11px',
+                  color: 'var(--hud-muted)',
+                  fontStyle: 'italic',
+                }}
+              >
+                {CHALLENGE_MODIFIERS[selectedModifierId].description}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Play Button */}
         <div style={{ padding: '16px 24px' }}>
