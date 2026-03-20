@@ -23,6 +23,23 @@ export function App() {
       setActiveScene(scene);
     };
     window.addEventListener('phaser:sceneChange', handler);
+
+    // Handle race condition: if Phaser scene already started before Preact mounted,
+    // check the current active scene from the game instance
+    const game = (window as unknown as Record<string, unknown>).__phaserGame as
+      { scene?: { scenes?: Array<{ sys?: { isActive?: () => boolean; settings?: { key?: string } } }> } } | undefined;
+    if (game?.scene?.scenes) {
+      for (const s of game.scene.scenes) {
+        if (s.sys?.isActive?.() && s.sys.settings?.key) {
+          const key = s.sys.settings.key as ActiveScene;
+          if (key !== 'BootScene') {
+            setActiveScene(key);
+            break;
+          }
+        }
+      }
+    }
+
     return () => window.removeEventListener('phaser:sceneChange', handler);
   }, []);
 
